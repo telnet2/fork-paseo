@@ -1,3 +1,5 @@
+import type { AgentQueueStatus } from "@getpaseo/protocol/fork/queue-status";
+import { QueueStatusPill } from "@/fork/queue-status-pill";
 import type { AgentAddress } from "@getpaseo/protocol/addresses";
 import { memo, useCallback, useMemo, type ReactElement } from "react";
 import { BackgroundWorkTrack, createHostBackgroundWorkModel } from "@/background-work";
@@ -36,11 +38,13 @@ export const AgentTracks = memo(function AgentTracks({
   workspaceId,
   agentId,
   parentAgentId,
+  queueStatus,
 }: {
   serverId: string;
   workspaceId: string;
   agentId: string;
   parentAgentId: string | null;
+  queueStatus: AgentQueueStatus | null;
 }): ReactElement {
   const subagentRows = useSubagentsForParent({ serverId, parentAgentId: agentId });
   const tasks = useSessionStore((state): TodoEntry[] | undefined =>
@@ -121,6 +125,7 @@ export const AgentTracks = memo(function AgentTracks({
 
   return (
     <ComposerTrackBar>
+      <QueueStatusPill status={queueStatus} />
       <BackgroundWorkTrack model={backgroundModel} count={backgroundWorkCount} />
       {parentAgentId ? <ParentAgentPill serverId={serverId} parentAgentId={parentAgentId} /> : null}
       <AgentTaskList tasks={tasks} />

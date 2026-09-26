@@ -1,3 +1,4 @@
+import type { QueueStatusEvent } from "./fork/queue-status.js";
 import type {
   AgentOptionControl,
   AgentOptionSelectControl,
@@ -413,6 +414,7 @@ export type AgentTimelineItem =
   | PluginTimelineItem;
 
 export type AgentStreamEvent =
+  | QueueStatusEvent
   | { type: "thread_started"; sessionId: string; provider: AgentProvider }
   | { type: "turn_started"; provider: AgentProvider; turnId?: string }
   | { type: "turn_completed"; provider: AgentProvider; usage?: AgentUsage; turnId?: string }

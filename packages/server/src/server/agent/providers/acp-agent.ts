@@ -482,6 +482,14 @@ export type ACPCatalogModelResolver = (
   context: ACPCatalogModelResolverContext,
 ) => Promise<AgentModelDefinition[]>;
 
+interface ACPSessionInfoContext {
+  update: SessionInfoUpdate;
+  provider: string;
+  turnId: string;
+}
+
+export type ACPSessionInfoParser = (context: ACPSessionInfoContext) => AgentStreamEvent[];
+
 interface ACPAgentClientOptions {
   provider: string;
   // Provider id usage sources match a session against; ACP sessions without one report no usage.
@@ -509,6 +517,7 @@ interface ACPAgentClientOptions {
     thinkingOptionId: string,
   ) => Promise<void>;
   capabilities?: AgentCapabilityFlags;
+  sessionInfoParser?: ACPSessionInfoParser;
   extensionCommandsParser?: ACPExtensionCommandsParser;
   waitForInitialCommands?: boolean;
   initialCommandsWaitTimeoutMs?: number;
@@ -541,6 +550,7 @@ interface ACPAgentSessionOptions {
     thinkingOptionId: string,
   ) => Promise<void>;
   capabilities: AgentCapabilityFlags;
+  sessionInfoParser?: ACPSessionInfoParser;
   extensionCommandsParser?: ACPExtensionCommandsParser;
   handle?: AgentPersistenceHandle;
   resumePurpose?: AgentResumePurpose;
@@ -985,6 +995,7 @@ export class ACPAgentClient implements AgentClient {
   ) => Promise<void>;
   private readonly waitForInitialCommands: boolean;
   private readonly initialCommandsWaitTimeoutMs: number;
+  private readonly sessionInfoParser?: ACPSessionInfoParser;
   private readonly extensionCommandsParser?: ACPExtensionCommandsParser;
   private readonly importPromptCache = new Map<string, ACPImportPromptCacheEntry>();
   private readonly now: () => number;
@@ -1016,6 +1027,7 @@ export class ACPAgentClient implements AgentClient {
     this.thinkingOptionWriter = options.thinkingOptionWriter;
     this.waitForInitialCommands = options.waitForInitialCommands ?? false;
     this.initialCommandsWaitTimeoutMs = options.initialCommandsWaitTimeoutMs ?? 1500;
+    this.sessionInfoParser = options.sessionInfoParser;
     this.extensionCommandsParser = options.extensionCommandsParser;
     this.now = options.now ?? Date.now;
   }
@@ -1055,6 +1067,7 @@ export class ACPAgentClient implements AgentClient {
         configuredModelIds: options?.configuredModelIds,
         agentId: launchContext?.agentId,
         launchEnv: launchContext?.env,
+        sessionInfoParser: this.sessionInfoParser,
         extensionCommandsParser: this.extensionCommandsParser,
         waitForInitialCommands: this.waitForInitialCommands,
         initialCommandsWaitTimeoutMs: this.initialCommandsWaitTimeoutMs,
@@ -1115,6 +1128,7 @@ export class ACPAgentClient implements AgentClient {
       configuredModelIds: options?.configuredModelIds,
       agentId: launchContext?.agentId,
       launchEnv: launchContext?.env,
+      sessionInfoParser: this.sessionInfoParser,
       extensionCommandsParser: this.extensionCommandsParser,
       waitForInitialCommands: this.waitForInitialCommands,
       initialCommandsWaitTimeoutMs: this.initialCommandsWaitTimeoutMs,
@@ -1805,6 +1819,7 @@ export class ACPAgentSession implements AgentSession, ACPClient {
   private commandsReadySettled = false;
   private waitForInitialCommands: boolean;
   private initialCommandsWaitTimeoutMs: number;
+  private readonly sessionInfoParser?: ACPSessionInfoParser;
   private readonly extensionCommandsParser?: ACPExtensionCommandsParser;
   private currentTurnUsage: AgentUsage | undefined;
   private activeForegroundTurnId: string | null = null;
@@ -1853,6 +1868,7 @@ export class ACPAgentSession implements AgentSession, ACPClient {
     this.currentTitle = config.title ?? null;
     this.waitForInitialCommands = options.waitForInitialCommands ?? false;
     this.initialCommandsWaitTimeoutMs = options.initialCommandsWaitTimeoutMs ?? 1500;
+    this.sessionInfoParser = options.sessionInfoParser;
     this.extensionCommandsParser = options.extensionCommandsParser;
   }
 
@@ -3276,9 +3292,17 @@ export class ACPAgentSession implements AgentSession, ACPClient {
         ];
       case "config_option_update":
         return [...pendingUserEvents, ...this.handleConfigOptionUpdate(update)];
-      case "session_info_update":
+      case "session_info_update": {
         this.handleSessionInfoUpdate(update);
-        return pendingUserEvents;
+        const parsed = this.activeForegroundTurnId
+          ? (this.sessionInfoParser?.({
+              update,
+              provider: this.provider,
+              turnId: this.activeForegroundTurnId,
+            }) ?? [])
+          : [];
+        return [...pendingUserEvents, ...parsed];
+      }
       case "usage_update":
         this.handleUsageUpdate(update);
         return pendingUserEvents;

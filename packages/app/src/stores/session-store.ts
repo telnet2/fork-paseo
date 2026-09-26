@@ -1,3 +1,4 @@
+import type { AgentQueueStatus } from "@getpaseo/protocol/fork/queue-status";
 import equal from "fast-deep-equal";
 import { create } from "zustand";
 import { subscribeWithSelector } from "zustand/middleware";
@@ -74,6 +75,7 @@ export interface AgentRuntimeInfo {
 }
 
 export interface Agent {
+  queueStatus?: AgentQueueStatus | null;
   serverId: string;
   id: string;
   provider: AgentProvider;

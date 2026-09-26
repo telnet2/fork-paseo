@@ -1,3 +1,4 @@
+import { useAgentQueueStatus } from "@/fork/use-agent-queue-status";
 import { getHostRuntimeStore } from "@/runtime/host-runtime";
 import { Button } from "@/components/ui/button";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
@@ -1101,6 +1102,7 @@ const ChatAgentReadyContent = memo(function ChatAgentReadyContent({
   const composerEditingSession = useComposerEditingSession("chat");
   const isComposerFullscreen = useComposerFullscreen(composerEditingSession);
   const hasActiveComposer = !agentState.archivedAt && !isArchivingCurrentAgent;
+  const queueStatus = useAgentQueueStatus(serverId, agentId);
   const parentAgentId = useParentAgentId(serverId, agentId);
   // With a composer the parent is a pill above it; without one, the box takes the composer's place.
   const parentPillAgentId = showsComposer ? parentAgentId : null;
@@ -1216,6 +1218,7 @@ const ChatAgentReadyContent = memo(function ChatAgentReadyContent({
       </RenderProfile>
       {hasActiveComposer && !draft ? (
         <AgentTracks
+          queueStatus={queueStatus}
           serverId={serverId}
           workspaceId={workspaceId}
           agentId={agentId}

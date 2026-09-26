@@ -1,3 +1,4 @@
+import { parseTraeQueueStatus, withTraeQueueStatus } from "./fork/trae-queue-status.js";
 import type { Logger } from "pino";
 
 import { GenericACPAgentClient } from "./generic-acp-agent.js";
@@ -16,7 +17,8 @@ export class TraeACPAgentClient extends GenericACPAgentClient {
   constructor(options: TraeACPAgentClientOptions) {
     super({
       logger: options.logger,
-      command: options.command,
+      command: withTraeQueueStatus(options.command),
+      sessionInfoParser: parseTraeQueueStatus,
       env: options.env,
       providerId: options.providerId,
       label: options.label,
