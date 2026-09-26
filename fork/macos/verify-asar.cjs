@@ -9,6 +9,7 @@ const required = [
   "dist/main.js",
   "node_modules/@getpaseo/server/dist/server/server/agent/providers/fork/trae-queue-status.js",
   "node_modules/@getpaseo/protocol/dist/fork/queue-status.js",
+  "node_modules/@getpaseo/server/dist/server/server/agent/providers/fork/trae-skill-warning.js",
   "node_modules/@getpaseo/server/dist/scripts/supervisor-entrypoint.js",
   "node_modules/@getpaseo/cli/dist/index.js",
   "node_modules/node-pty/prebuilds/darwin-arm64/pty.node",
@@ -59,4 +60,11 @@ assert(
     fs.readFileSync(resources + "/app-dist/" + file, "utf8").includes("paseo.fork.custom-css.v1"),
   ),
   "Custom CSS settings missing from renderer",
+);
+
+assert(
+  rendererFiles.some((file) =>
+    fs.readFileSync(resources + "/app-dist/" + file, "utf8").includes("--paseo-warning-color"),
+  ),
+  "Warning color customization missing from renderer",
 );

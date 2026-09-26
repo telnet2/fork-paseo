@@ -9,6 +9,7 @@ import {
 } from "@agentclientprotocol/sdk";
 import { tmpdir } from "node:os";
 import { ACPAgentSession, DEFAULT_ACP_CAPABILITIES } from "../acp-agent.js";
+import { parseTraeSkillWarning } from "./trae-skill-warning.js";
 import { parseTraeQueueStatus, withTraeQueueStatus } from "./trae-queue-status.js";
 import { AgentManager } from "../../agent-manager.js";
 import { toAgentPayload, toStoredAgentRecord } from "../../agent-projections.js";
@@ -32,6 +33,7 @@ async function setup() {
       defaultModes: [],
       capabilities: DEFAULT_ACP_CAPABILITIES,
       sessionInfoParser: parseTraeQueueStatus,
+      notificationParser: parseTraeSkillWarning,
     },
   );
   const outgoing = new TransformStream<Uint8Array, Uint8Array>();
@@ -134,6 +136,12 @@ async function setup() {
     snapshot,
     start,
     queue,
+    async message(text: string, sessionId = created.sessionId) {
+      await remote.sessionUpdate({
+        sessionId,
+        update: { sessionUpdate: "agent_message_chunk", content: { type: "text", text } },
+      });
+    },
     complete: () => resolvePrompt({ stopReason: "end_turn" }),
     fail: () => rejectPrompt(new RequestError(-32000, "request failed")),
   };
@@ -274,4 +282,36 @@ test("enables the CLI capability without replacing user overrides", () => {
     "--",
     "value",
   ]);
+});
+
+test("delivers startup warnings separately and preserves adjacent assistant text through ACP", async () => {
+  const h = await setup();
+  const warning =
+    "Warning: Skill descriptions were shortened to fit the 2% skills context budget. TraeCode can still see every skill, but some descriptions are shorter. Disable unused skills or plugins to leave more room for the rest.";
+  await h.message(warning + "\n\n", "another-session");
+  await h.message(warning + "\n\n");
+  await vi.waitFor(() => expect(h.events.filter((e) => e.type === "timeline")).toHaveLength(1));
+  expect(h.events[0]).toMatchObject({
+    type: "timeline",
+    item: { type: "notification", level: "warning", message: warning },
+  });
+  const { done } = await h.start();
+  await h.message("Before.");
+  await h.message(warning + "\n\n");
+  await h.message("After ");
+  await h.message("warning.");
+  h.complete();
+  await done;
+  const messages = h.events.flatMap((e) =>
+    e.type === "timeline" && e.item.type === "assistant_message" ? [e.item] : [],
+  );
+  // AgentManager may coalesce adjacent deltas; assert the visible message boundaries.
+  const textByMessage = new Map<string | undefined, string>();
+  for (const item of messages) {
+    textByMessage.set(item.messageId, (textByMessage.get(item.messageId) ?? "") + item.text);
+  }
+  expect([...textByMessage.values()]).toEqual(["Before.", "After warning."]);
+  expect(
+    h.events.filter((e) => e.type === "timeline" && e.item.type === "notification"),
+  ).toHaveLength(2);
 });

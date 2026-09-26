@@ -9,6 +9,7 @@ import {
   DEFAULT_ACP_CAPABILITIES,
   type ACPExtensionCommandsParser,
   type ACPSessionInfoParser,
+  type ACPNotificationParser,
 } from "./acp-agent.js";
 import {
   buildBinaryDiagnosticRows,
@@ -30,6 +31,7 @@ interface GenericACPAgentClientOptions {
   clientCapabilityMeta?: ACPClientCapabilityMeta;
   configFeatureOptions?: ACPConfigFeatureOption[];
   sessionInfoParser?: ACPSessionInfoParser;
+  notificationParser?: ACPNotificationParser;
   extensionCommandsParser?: ACPExtensionCommandsParser;
   catalogModelResolver?: ACPCatalogModelResolver;
   now?: () => number;
@@ -58,6 +60,7 @@ export class GenericACPAgentClient extends ACPAgentClient {
       clientCapabilityMeta: options.clientCapabilityMeta,
       configFeatureOptions: options.configFeatureOptions,
       sessionInfoParser: options.sessionInfoParser,
+      notificationParser: options.notificationParser,
       extensionCommandsParser: options.extensionCommandsParser,
       catalogModelResolver: options.catalogModelResolver,
       now: options.now,

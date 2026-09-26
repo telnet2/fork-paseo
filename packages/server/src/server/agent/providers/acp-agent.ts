@@ -490,6 +490,12 @@ interface ACPSessionInfoContext {
 
 export type ACPSessionInfoParser = (context: ACPSessionInfoContext) => AgentStreamEvent[];
 
+// Providers may recognize a complete notice carried as an ordinary ACP message.
+// Return null to leave normal message streaming and identity unchanged.
+export type ACPNotificationParser = (
+  update: Extract<SessionUpdate, { sessionUpdate: "agent_message_chunk" }>,
+) => Extract<AgentTimelineItem, { type: "notification" }> | null;
+
 interface ACPAgentClientOptions {
   provider: string;
   // Provider id usage sources match a session against; ACP sessions without one report no usage.
@@ -518,6 +524,7 @@ interface ACPAgentClientOptions {
   ) => Promise<void>;
   capabilities?: AgentCapabilityFlags;
   sessionInfoParser?: ACPSessionInfoParser;
+  notificationParser?: ACPNotificationParser;
   extensionCommandsParser?: ACPExtensionCommandsParser;
   waitForInitialCommands?: boolean;
   initialCommandsWaitTimeoutMs?: number;
@@ -551,6 +558,7 @@ interface ACPAgentSessionOptions {
   ) => Promise<void>;
   capabilities: AgentCapabilityFlags;
   sessionInfoParser?: ACPSessionInfoParser;
+  notificationParser?: ACPNotificationParser;
   extensionCommandsParser?: ACPExtensionCommandsParser;
   handle?: AgentPersistenceHandle;
   resumePurpose?: AgentResumePurpose;
@@ -996,6 +1004,7 @@ export class ACPAgentClient implements AgentClient {
   private readonly waitForInitialCommands: boolean;
   private readonly initialCommandsWaitTimeoutMs: number;
   private readonly sessionInfoParser?: ACPSessionInfoParser;
+  private readonly notificationParser?: ACPNotificationParser;
   private readonly extensionCommandsParser?: ACPExtensionCommandsParser;
   private readonly importPromptCache = new Map<string, ACPImportPromptCacheEntry>();
   private readonly now: () => number;
@@ -1028,6 +1037,7 @@ export class ACPAgentClient implements AgentClient {
     this.waitForInitialCommands = options.waitForInitialCommands ?? false;
     this.initialCommandsWaitTimeoutMs = options.initialCommandsWaitTimeoutMs ?? 1500;
     this.sessionInfoParser = options.sessionInfoParser;
+    this.notificationParser = options.notificationParser;
     this.extensionCommandsParser = options.extensionCommandsParser;
     this.now = options.now ?? Date.now;
   }
@@ -1068,6 +1078,7 @@ export class ACPAgentClient implements AgentClient {
         agentId: launchContext?.agentId,
         launchEnv: launchContext?.env,
         sessionInfoParser: this.sessionInfoParser,
+        notificationParser: this.notificationParser,
         extensionCommandsParser: this.extensionCommandsParser,
         waitForInitialCommands: this.waitForInitialCommands,
         initialCommandsWaitTimeoutMs: this.initialCommandsWaitTimeoutMs,
@@ -1129,6 +1140,7 @@ export class ACPAgentClient implements AgentClient {
       agentId: launchContext?.agentId,
       launchEnv: launchContext?.env,
       sessionInfoParser: this.sessionInfoParser,
+      notificationParser: this.notificationParser,
       extensionCommandsParser: this.extensionCommandsParser,
       waitForInitialCommands: this.waitForInitialCommands,
       initialCommandsWaitTimeoutMs: this.initialCommandsWaitTimeoutMs,
@@ -1820,6 +1832,7 @@ export class ACPAgentSession implements AgentSession, ACPClient {
   private waitForInitialCommands: boolean;
   private initialCommandsWaitTimeoutMs: number;
   private readonly sessionInfoParser?: ACPSessionInfoParser;
+  private readonly notificationParser?: ACPNotificationParser;
   private readonly extensionCommandsParser?: ACPExtensionCommandsParser;
   private currentTurnUsage: AgentUsage | undefined;
   private activeForegroundTurnId: string | null = null;
@@ -1869,6 +1882,7 @@ export class ACPAgentSession implements AgentSession, ACPClient {
     this.waitForInitialCommands = options.waitForInitialCommands ?? false;
     this.initialCommandsWaitTimeoutMs = options.initialCommandsWaitTimeoutMs ?? 1500;
     this.sessionInfoParser = options.sessionInfoParser;
+    this.notificationParser = options.notificationParser;
     this.extensionCommandsParser = options.extensionCommandsParser;
   }
 
@@ -3253,6 +3267,11 @@ export class ACPAgentSession implements AgentSession, ACPClient {
     const pendingUserEvents = this.flushPendingUserMessage();
     switch (update.sessionUpdate) {
       case "agent_message_chunk": {
+        const notice = this.notificationParser?.(update);
+        if (notice) {
+          this.fallbackAssistantMessageId = null;
+          return [...pendingUserEvents, this.wrapTimeline(notice)];
+        }
         const item = this.createMessageTimelineItem("assistant_message", update);
         return item ? [...pendingUserEvents, this.wrapTimeline(item)] : pendingUserEvents;
       }

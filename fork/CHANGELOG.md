@@ -2,6 +2,15 @@
 
 Upstream release notes remain in the upstream changelog. Entries here describe only bs-main-0926.
 
+## 2026-09-27 — Yellow skill warnings (0.9.2 fork)
+
+- Recognize Trae's complete skill-description truncation notice from both ACP backends and display it as a warning, separately from the following answer.
+- Render warning text in yellow/amber and expose `--paseo-warning-color` through Custom CSS. Preserve saved styles, ordinary assistant text, and info/error colors.
+- Keep the recognizer and appearance logic in fork files, using an optional ACP notice parser and notification data attributes as small integration hooks.
+- Include the parser in the bundled daemon. Remote daemons need this update; existing transcript text is not rewritten.
+
+Validation: 19 focused server/client/browser tests and both real-app CSS flows passed. Warning delivery, separate assistant messages, default/custom colors, saved CSS without the new variable, reload, reset, narrow layout, compact activity spacing, and Chat outline clearance are covered. Workspace typecheck, lint, formatting, and the rebase skill validator passed.
+
 ## 2026-09-27 — Compact activity rows (0.9.2 fork)
 
 - Update Wide & compact to use 4 px paragraph gaps, 2 px assistant padding, zero text/activity gap, and 48 px transcript left padding for Chat outline clearance.

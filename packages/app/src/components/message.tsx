@@ -1,4 +1,5 @@
-import { appearanceDataSets } from "@/fork/appearance/anchors";
+import { appearanceDataSets, notificationDataSets } from "@/fork/appearance/anchors";
+import { warningTextStyle } from "@/fork/appearance/notifications";
 import { useDisclosureHold } from "@/agent-stream/disclosure";
 import { MessagePreview, MessageSender } from "@/components/user-message";
 import { useStableEvent } from "@/hooks/use-stable-event";
@@ -1399,14 +1400,18 @@ export const Notification = memo(function Notification({
     [resolvedDisableOuterSpacing, config.bg],
   );
   return (
-    <View style={containerStyle}>
+    <View style={containerStyle} dataSet={notificationDataSets[level]}>
       <View style={notificationStylesheet.content}>
         <View style={notificationStylesheet.row}>
           <View style={notificationStylesheet.iconContainer}>
             <IconComponent size={16} uniProps={config.iconColorMapping} />
           </View>
           <View style={notificationStylesheet.textContainer}>
-            <Text style={notificationStylesheet.messageText} selectable>
+            <Text
+              dataSet={appearanceDataSets.notificationText}
+              style={[notificationStylesheet.messageText, warningTextStyle(level)]}
+              selectable
+            >
               {message}
             </Text>
           </View>

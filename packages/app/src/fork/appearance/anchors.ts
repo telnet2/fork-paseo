@@ -7,6 +7,7 @@ export const appearanceDataSets = {
   tracks: { paseoContent: "tracks" },
   blockGap: { paseoBlockGap: "true" },
   blockLast: { paseoBlockGap: "false" },
+  notificationText: { paseoNotificationText: "true" },
   activityCollapsed: { paseoActivity: "collapsed" },
   activityExpanded: { paseoActivity: "expanded" },
   activityHeader: { paseoActivityHeader: "true" },
@@ -23,3 +24,9 @@ export function streamRowDataSet(kind: StreamItem["kind"], gap: number) {
   if (kind !== "user_message" && gap === SPACING[1]) return activityRow;
   return appearanceDataSets.transcript;
 }
+
+export const notificationDataSets = {
+  info: { paseoNotification: "info" },
+  warning: { paseoNotification: "warning" },
+  error: { paseoNotification: "error" },
+};

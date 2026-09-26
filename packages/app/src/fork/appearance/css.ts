@@ -7,6 +7,7 @@ export const WIDE_COMPACT_CSS = `:root {
   --paseo-assistant-padding: 2px;
   --paseo-activity-gap: 0px;
   --paseo-activity-line-height: 21px;
+  --paseo-warning-color: #f4bf4f;
 }
 
 [data-paseo-content="transcript"] {
@@ -32,8 +33,12 @@ export const WIDE_COMPACT_CSS = `:root {
 `;
 
 // Explicit anchors avoid depending on generated Unistyles classes or DOM nesting.
-// Fallbacks match upstream; an empty user stylesheet removes these rules entirely.
+// Layout fallbacks match upstream; warning color matches the notification icon.
+// An empty user stylesheet removes these rules entirely.
 export const TRANSCRIPT_CSS = `
+[data-paseo-notification="warning"] [data-paseo-notification-text] {
+  color: var(--paseo-warning-color, #f59e0b) !important;
+}
 [data-paseo-content] {
   max-width: var(--paseo-content-max-width, 820px) !important;
 }
