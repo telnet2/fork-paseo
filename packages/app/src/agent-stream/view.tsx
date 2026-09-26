@@ -1,3 +1,4 @@
+import { appearanceDataSets, streamRowDataSet } from "@/fork/appearance/anchors";
 import { ChatFind, ChatFindExpansion } from "@/agent-stream/chat-find";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import React, {
@@ -119,7 +120,7 @@ function renderLiveAuxiliaryNode(input: {
     <>
       {input.turnFooter}
       {input.pendingPermissions ? (
-        <View style={stylesheet.contentWrapper}>
+        <View dataSet={appearanceDataSets.transcript} style={stylesheet.contentWrapper}>
           <View style={stylesheet.listHeaderContent}>{input.pendingPermissions}</View>
         </View>
       ) : null}
@@ -174,7 +175,11 @@ function renderStreamItemWithTurnFooter(input: {
     />
   ) : null;
   const content = (
-    <StreamItemWrapper itemId={input.layoutItem.item.id} gapBelow={input.layoutItem.gapBelow}>
+    <StreamItemWrapper
+      itemId={input.layoutItem.item.id}
+      itemKind={input.layoutItem.item.kind}
+      gapBelow={input.layoutItem.gapBelow}
+    >
       {input.content}
     </StreamItemWrapper>
   );
@@ -1775,14 +1780,19 @@ const permissionStyles = StyleSheet.create((theme) => ({
 
 interface StreamItemWrapperProps {
   itemId: string;
+  itemKind: StreamItem["kind"];
   gapBelow: number;
   children: ReactNode;
 }
 
-function StreamItemWrapper({ gapBelow, children }: StreamItemWrapperProps) {
+function StreamItemWrapper({ gapBelow, itemKind, children }: StreamItemWrapperProps) {
   const wrapperStyle = useMemo(
     () => [stylesheet.streamItemWrapper, { marginBottom: gapBelow }],
     [gapBelow],
   );
-  return <View style={wrapperStyle}>{children}</View>;
+  return (
+    <View dataSet={streamRowDataSet(itemKind, gapBelow)} style={wrapperStyle}>
+      {children}
+    </View>
+  );
 }

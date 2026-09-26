@@ -1,3 +1,4 @@
+import { appearanceDataSets } from "@/fork/appearance/anchors";
 import { useCallback, useMemo, useState, type ReactElement, type ReactNode } from "react";
 import { Pressable, Text, View } from "react-native";
 import { StyleSheet } from "react-native-unistyles";
@@ -32,7 +33,7 @@ import { COMPOSER_PILL_CLEARANCE, composerPillStyles } from "./pill-styles";
 export function ComposerTrackBar({ children }: { children: ReactNode }): ReactElement {
   return (
     <View style={styles.bar} pointerEvents="box-none">
-      <View style={styles.track} pointerEvents="box-none">
+      <View dataSet={appearanceDataSets.tracks} style={styles.track} pointerEvents="box-none">
         {children}
       </View>
     </View>

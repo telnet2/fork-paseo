@@ -1,3 +1,4 @@
+import { appearanceDataSets } from "@/fork/appearance/anchors";
 import type { ComposerTextSource } from "./text-source";
 import { createStore, type StoreApi } from "zustand/vanilla";
 import { useStore } from "zustand";
@@ -2406,7 +2407,7 @@ function ComposerContentImpl({
         <AttachmentLightbox source={lightboxSource} onClose={handleLightboxClose} />
         {/* Input area */}
         <View style={inputAreaContainerStyle}>
-          <View style={styles.inputAreaContent}>
+          <View dataSet={appearanceDataSets.composer} style={styles.inputAreaContent}>
             {queueList}
             {sendErrorNode}
 

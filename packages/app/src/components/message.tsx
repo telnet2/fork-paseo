@@ -1,3 +1,4 @@
+import { appearanceDataSets } from "@/fork/appearance/anchors";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { TaskListRow } from "@/components/task-list-row";
 import {
@@ -1383,7 +1384,11 @@ function AssistantMessageBlockContainer({
     [block],
   );
   return (
-    <View style={style} onLayout={isWeb ? handleLayout : undefined}>
+    <View
+      dataSet={marginBottom > 0 ? appearanceDataSets.blockGap : appearanceDataSets.blockLast}
+      style={style}
+      onLayout={isWeb ? handleLayout : undefined}
+    >
       {children}
     </View>
   );
@@ -1986,8 +1991,12 @@ export const AssistantMessage = memo(function AssistantMessage({
     [occurrenceKey, revealedMessage.length],
   );
 
+  const appearanceDataSet = useMemo(
+    () => ({ ...revealDataSet, paseoAssistantSpacing: spacing }),
+    [revealDataSet, spacing],
+  );
   return (
-    <View testID="assistant-message" dataSet={revealDataSet} style={assistantContainerStyle}>
+    <View testID="assistant-message" dataSet={appearanceDataSet} style={assistantContainerStyle}>
       {keyedBlocks.map(({ key, block }, index) => (
         <AssistantMessageBlockContainer
           key={key}

@@ -50,6 +50,7 @@ import {
 import { isNative } from "@/constants/platform";
 import type { PluginThemeOption } from "@/plugins/themes";
 import { settingsStyles } from "@/styles/settings";
+import { CustomCssSection } from "@/fork/appearance/section";
 import { AppearancePreview } from "./appearance-preview";
 
 // ---------------------------------------------------------------------------
@@ -631,6 +632,7 @@ export function AppearanceSection() {
           />
         </View>
       </SettingsSection>
+      <CustomCssSection />
       <SettingsSection title={t("settings.appearance.fonts.title")}>
         <View style={settingsStyles.card}>
           {showInterfaceFontFamilyRow ? (

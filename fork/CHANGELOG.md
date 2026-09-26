@@ -2,6 +2,16 @@
 
 Upstream release notes remain in the upstream changelog. Entries here describe only bs-main-0926.
 
+## 2026-09-27 — Custom CSS (0.9.2 fork)
+
+- Add Settings → Appearance → Custom CSS for desktop and browser clients, with Apply, Wide & compact, and Reset CSS controls.
+- Use a wider, tighter default preset: remove the 820 px content cap, align the composer and tracks, and reduce paragraph, assistant, and activity spacing.
+- Expose CSS variables and stable transcript/composer selectors for further customization without rebuilding.
+- Save styles locally, synchronize browser tabs, preserve drafts on save failure, and restore original styles on reset.
+- Keep CSS logic in separate fork files with small registration and data-attribute hooks. Native clients retain their existing styles.
+
+Validation: 13 focused fork tests and the real-app CSS test passed, including reasoning/tool spacing, reload persistence, reset, and 1600/390 px layouts. Workspace typecheck, lint, formatting, and both skill validators passed.
+
 ## 2026-09-27 — Queue status (0.9.2 fork)
 
 - Show Trae backend queue progress above the composer, beside task pills.
