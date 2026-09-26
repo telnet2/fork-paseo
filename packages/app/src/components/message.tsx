@@ -1624,7 +1624,10 @@ function ExpandableBadgeWebShimmerOverlay({
         </Text>
       ) : null}
       {showOpenFileButton ? (
-        <View style={expandableBadgeStylesheet.openFileButton}>
+        <View
+          dataSet={appearanceDataSets.activityOpenFile}
+          style={expandableBadgeStylesheet.openFileButton}
+        >
           <View style={expandableBadgeStylesheet.openFileButtonPlaceholderIcon} />
         </View>
       ) : null}
@@ -1712,6 +1715,7 @@ function ExpandableBadgeLabelRow({
           onHoverOut={onOpenFileHoverOut}
           accessibilityRole="button"
           accessibilityLabel={t("message.actions.openFile")}
+          dataSet={appearanceDataSets.activityOpenFile}
           testID="tool-call-open-file"
           style={expandableBadgeStylesheet.openFileButton}
           hitSlop={6}
@@ -2191,6 +2195,9 @@ export const ExpandableBadge = memo(function ExpandableBadge({
   return (
     <View
       style={containerStyle}
+      dataSet={
+        isExpanded ? appearanceDataSets.activityExpanded : appearanceDataSets.activityCollapsed
+      }
       testID={testID}
       onPointerEnter={isWeb ? handleHoverIn : undefined}
       onPointerLeave={isWeb ? handleHoverOut : undefined}
@@ -2199,10 +2206,16 @@ export const ExpandableBadge = memo(function ExpandableBadge({
         {...pressHandlers}
         disabled={!isInteractive}
         accessibilityState={accessibilityState}
+        dataSet={appearanceDataSets.activityHeader}
         style={pressableStyle}
       >
         <View style={expandableBadgeStylesheet.headerRow}>
-          <View style={expandableBadgeStylesheet.iconBadge}>{iconSlotNode}</View>
+          <View
+            dataSet={appearanceDataSets.activityIcon}
+            style={expandableBadgeStylesheet.iconBadge}
+          >
+            {iconSlotNode}
+          </View>
           <ExpandableBadgeLabelRow
             label={label}
             labelStyle={labelStyle}

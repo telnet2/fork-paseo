@@ -2,6 +2,15 @@
 
 Upstream release notes remain in the upstream changelog. Entries here describe only bs-main-0926.
 
+## 2026-09-27 — Compact activity rows (0.9.2 fork)
+
+- Update Wide & compact to use 4 px paragraph gaps, 2 px assistant padding, zero text/activity gap, and 48 px transcript left padding for Chat outline clearance.
+- Make collapsed reasoning and tool summary rows 21 px high, matching the default paragraph line height, by removing internal vertical padding and transparent borders.
+- Expose activity line height in the preset and stable header/icon selectors; preserve expanded detail spacing and hover behavior.
+- Preserve saved CSS on upgrade. Select Wide & compact and Apply CSS to adopt the revised preset.
+
+Validation: 13 focused fork tests and the real-app CSS test passed. Collapsed activity height and adjacent row spacing both match the 21 px paragraph line height; Chat outline clearance, hover, expansion/collapse, persistence, reset, and wide/narrow layouts passed. Workspace typecheck, lint, and the rebase skill validator passed.
+
 ## 2026-09-27 — Custom CSS (0.9.2 fork)
 
 - Add Settings → Appearance → Custom CSS for desktop and browser clients, with Apply, Wide & compact, and Reset CSS controls.

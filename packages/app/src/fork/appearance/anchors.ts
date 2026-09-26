@@ -7,6 +7,11 @@ export const appearanceDataSets = {
   tracks: { paseoContent: "tracks" },
   blockGap: { paseoBlockGap: "true" },
   blockLast: { paseoBlockGap: "false" },
+  activityCollapsed: { paseoActivity: "collapsed" },
+  activityExpanded: { paseoActivity: "expanded" },
+  activityHeader: { paseoActivityHeader: "true" },
+  activityIcon: { paseoActivityIcon: "true" },
+  activityOpenFile: { paseoActivityOpenFile: "true" },
 };
 const paragraphRow = { ...appearanceDataSets.transcript, paseoGap: "paragraph" };
 const activityRow = { ...appearanceDataSets.transcript, paseoGap: "activity" };
