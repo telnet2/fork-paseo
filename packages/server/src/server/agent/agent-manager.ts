@@ -1,3 +1,5 @@
+import type { AgentQueueStatus } from "@getpaseo/protocol/fork/queue-status";
+import { dispatchQueueStatusEvent, getActiveQueueStatus } from "./fork/queue-status.js";
 import { projectTimelineRows } from "./timeline-projection.js";
 import type { PluginLifecycle } from "../plugins/lifecycle/index.js";
 import { describeHookAgent, publishAgentStream } from "../plugins/lifecycle/index.js";
@@ -392,6 +394,7 @@ interface HandleStreamEventOptions {
 }
 
 interface ManagedAgentBase {
+  queueStatus?: AgentQueueStatus | null;
   id: string;
   provider: AgentProvider;
   cwd: string;
@@ -4288,6 +4291,10 @@ export class AgentManager {
     const { agent, event, options, isForegroundEvent, eventTurnId, terminalDisposition, flags } =
       params;
     switch (event.type) {
+      case "queue_status":
+        return dispatchQueueStatusEvent({ ...params, event }, () =>
+          this.emitState(agent, { persist: false }),
+        );
       case "thread_started":
         this.onStreamThreadStarted(agent);
         return undefined;
@@ -4785,6 +4792,7 @@ export class AgentManager {
   }
 
   private emitState(agent: ManagedAgent, options?: { persist?: boolean }): void {
+    agent.queueStatus = getActiveQueueStatus(agent);
     // Keep attention as an edge-triggered unread signal, not a level signal.
     this.checkAndSetAttention(agent);
     if (options?.persist !== false) {

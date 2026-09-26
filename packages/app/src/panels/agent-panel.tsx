@@ -1,3 +1,4 @@
+import { useAgentQueueStatus } from "@/fork/use-agent-queue-status";
 import { getHostRuntimeStore } from "@/runtime/host-runtime";
 import { Button } from "@/components/ui/button";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
@@ -1164,7 +1165,9 @@ const ChatAgentReadyContent = memo(function ChatAgentReadyContent({
   });
   const hasPluginComposerPills = useHasPluginComposerPills(serverId, workspaceId, agentId);
   const hasActiveComposer = !agentState.archivedAt && !isArchivingCurrentAgent;
+  const queueStatus = useAgentQueueStatus(serverId, agentId);
   const hasVisibleAgentTracks = hasAgentTracks({
+    hasQueueStatus: queueStatus !== null,
     subagentRows,
     tasks,
     archiveFinishedStatus: archiveFinishedSubagents.status,
@@ -1253,6 +1256,7 @@ const ChatAgentReadyContent = memo(function ChatAgentReadyContent({
       </RenderProfile>
       {hasActiveComposer ? (
         <AgentTracks
+          queueStatus={queueStatus}
           serverId={serverId}
           workspaceId={workspaceId}
           agentId={agentId}

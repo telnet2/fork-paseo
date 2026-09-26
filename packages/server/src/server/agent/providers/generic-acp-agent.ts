@@ -8,6 +8,7 @@ import {
   type ACPConfigFeatureOption,
   DEFAULT_ACP_CAPABILITIES,
   type ACPExtensionCommandsParser,
+  type ACPSessionInfoParser,
 } from "./acp-agent.js";
 import {
   buildBinaryDiagnosticRows,
@@ -27,6 +28,7 @@ interface GenericACPAgentClientOptions {
   diagnosticPhaseTimeoutMs?: number;
   clientCapabilityMeta?: ACPClientCapabilityMeta;
   configFeatureOptions?: ACPConfigFeatureOption[];
+  sessionInfoParser?: ACPSessionInfoParser;
   extensionCommandsParser?: ACPExtensionCommandsParser;
   catalogModelResolver?: ACPCatalogModelResolver;
   now?: () => number;
@@ -53,6 +55,7 @@ export class GenericACPAgentClient extends ACPAgentClient {
       initialCommandsWaitTimeoutMs: options.initialCommandsWaitTimeoutMs,
       clientCapabilityMeta: options.clientCapabilityMeta,
       configFeatureOptions: options.configFeatureOptions,
+      sessionInfoParser: options.sessionInfoParser,
       extensionCommandsParser: options.extensionCommandsParser,
       catalogModelResolver: options.catalogModelResolver,
       now: options.now,

@@ -1,3 +1,4 @@
+import { getActiveQueueStatus } from "./fork/queue-status.js";
 import type {
   AgentListItemPayload,
   AgentSnapshotPayload,
@@ -113,6 +114,7 @@ export function toAgentPayload(
   });
 
   const payload: AgentSnapshotPayload = {
+    queueStatus: getActiveQueueStatus(agent),
     id: agent.id,
     provider: agent.provider,
     cwd: agent.cwd,

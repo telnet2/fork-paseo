@@ -1,3 +1,4 @@
+import { AgentQueueStatusSchema } from "./fork/queue-status.js";
 import { AgentProfileSchema, AgentSkillSelectionSchema } from "./agent-profile.js";
 export {
   AgentProfileSchema,
@@ -808,6 +809,7 @@ const AgentActiveTurnPayloadSchema = z.object({
 });
 
 export const AgentSnapshotPayloadSchema = z.object({
+  queueStatus: AgentQueueStatusSchema.nullable().optional(),
   id: z.string(),
   provider: AgentProviderSchema,
   cwd: z.string(),
