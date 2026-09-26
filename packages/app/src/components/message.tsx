@@ -1,4 +1,5 @@
-import { appearanceDataSets } from "@/fork/appearance/anchors";
+import { appearanceDataSets, notificationDataSets } from "@/fork/appearance/anchors";
+import { warningTextStyle } from "@/fork/appearance/notifications";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { TaskListRow } from "@/components/task-list-row";
 import {
@@ -2170,14 +2171,18 @@ export const Notification = memo(function Notification({
     [resolvedDisableOuterSpacing, config.bg],
   );
   return (
-    <View style={containerStyle}>
+    <View style={containerStyle} dataSet={notificationDataSets[level]}>
       <View style={notificationStylesheet.content}>
         <View style={notificationStylesheet.row}>
           <View style={notificationStylesheet.iconContainer}>
             <IconComponent size={16} uniProps={config.iconColorMapping} />
           </View>
           <View style={notificationStylesheet.textContainer}>
-            <Text style={notificationStylesheet.messageText} selectable>
+            <Text
+              dataSet={appearanceDataSets.notificationText}
+              style={[notificationStylesheet.messageText, warningTextStyle(level)]}
+              selectable
+            >
               {message}
             </Text>
           </View>

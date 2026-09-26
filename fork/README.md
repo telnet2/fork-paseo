@@ -19,7 +19,7 @@ The chip shares the task pill's popover/sheet component and composer clearance. 
 
 ## Custom CSS
 
-Desktop and browser clients expose **Settings → Appearance → Custom CSS**. The first launch uses the Wide & compact preset: conversation rows and the composer fill the available width, with smaller paragraph and activity gaps. Apply saves to this client's local storage and updates open views immediately. Reset CSS saves an empty stylesheet and restores upstream styles. Native iOS/Android clients retain upstream appearance.
+Desktop and browser clients expose **Settings → Appearance → Custom CSS**. The first launch uses the Wide & compact preset: conversation rows and the composer fill the available width, with smaller paragraph and activity gaps. Apply saves to this client's local storage and updates open views immediately. Reset CSS saves an empty stylesheet and restores upstream styles. Native iOS/Android clients do not load custom CSS.
 
 The variables at the top of the editable preset are:
 
@@ -31,6 +31,7 @@ The variables at the top of the editable preset are:
   --paseo-assistant-padding: 2px;
   --paseo-activity-gap: 0px;
   --paseo-activity-line-height: 21px;
+  --paseo-warning-color: #f4bf4f;
 }
 ```
 
@@ -50,17 +51,36 @@ CSS lives under local-storage key `paseo.fork.custom-css.v1`, separately from up
 
 The implementation is in `packages/app/src/fork/appearance/`. Upstream hooks mount the provider/editor and mark layout surfaces with stable data attributes; the fork stylesheet owns all overrides. Paseo's configuration and plugin-theme API expose no custom CSS or layout tokens. A daemon wrapper cannot style the Electron renderer. Keep these hooks until upstream provides equivalent client CSS customization, then migrate the stored stylesheet and drop them. Do not override virtualizer positioning or measured heights; width/spacing changes use the existing ResizeObserver measurement path.
 
+## Trae skill warnings
+
+Trae emits the complete “Skill descriptions were shortened…” notice as an ACP assistant text chunk. Its app-server backend prefixes it with `Warning: `; the legacy backend sends the body. Neither supplies a severity field. The fork recognizes the two known bodies (with or without the 2% budget), only on complete chunks without a model message ID, and maps them to Paseo's existing warning notification. Unrecognized text follows the normal assistant path. The warning stays separate from the next answer, and no wire schema changes are needed.
+
+Warning text is yellow/amber by default. Customize it in **Settings → Appearance → Custom CSS**:
+
+```css
+:root {
+  --paseo-warning-color: #f4bf4f;
+}
+```
+
+Add the variable to your existing `:root` block to preserve your layout. The color applies to warning text; info/error notices and ordinary assistant text retain their styles. Stable selectors are `[data-paseo-notification="warning"]` and `[data-paseo-notification-text]`. Saved CSS without the variable uses the notification icon's amber; Reset CSS removes the override and keeps that default warning color.
+
+The connected daemon must run this fork to classify new Trae warnings. Old transcript text is not rewritten. The bundled desktop daemon includes the parser; remote hosts need the updated daemon too. No Trae source changes are required.
+
+The parser lives in `server/agent/providers/fork/trae-skill-warning.ts`. The generic ACP hook is optional and wired through create/resume; providers other than Trae retain their existing behavior. CSS alone cannot recognize unmarked text, and Trae supplies no typed warning extension to configure. Keep the text recognizer until Trae exposes severity metadata, then replace it and retain the same transport/rendering tests.
+
 ## Ownership and integration sites
 
-| Concern                                         | Owner                                            |
-| ----------------------------------------------- | ------------------------------------------------ |
-| Authentication, routing, retries, backend queue | Existing Trae process                            |
-| Metadata validation and launch opt-in           | server agent/providers/fork/trae-queue-status.ts |
-| State transitions and deduplication             | server agent/fork/queue-status.ts                |
-| Wire schema                                     | protocol/src/fork/queue-status.ts                |
-| Subscription, labels and chip                   | app/src/fork/                                    |
-| Client CSS persistence, editor and rules        | app/src/fork/appearance/                         |
-| Build environment and package verification      | fork/macos/                                      |
+| Concern                                         | Owner                                             |
+| ----------------------------------------------- | ------------------------------------------------- |
+| Authentication, routing, retries, backend queue | Existing Trae process                             |
+| Skill-warning recognition                       | server agent/providers/fork/trae-skill-warning.ts |
+| Metadata validation and launch opt-in           | server agent/providers/fork/trae-queue-status.ts  |
+| State transitions and deduplication             | server agent/fork/queue-status.ts                 |
+| Wire schema                                     | protocol/src/fork/queue-status.ts                 |
+| Subscription, labels and chip                   | app/src/fork/                                     |
+| Client CSS persistence, editor and rules        | app/src/fork/appearance/                          |
+| Build environment and package verification      | fork/macos/                                       |
 
 The existing files contain only integration hooks: ACP parser option plumbing (create/resume), Trae adapter configuration, internal event union, manager event dispatch/state normalization, snapshot schema/projection, app snapshot mappings, and track visibility/rendering. Generated validators remain ignored outputs.
 
@@ -76,7 +96,7 @@ From the repository root with Node 22 on PATH:
 
 ```sh
 npm run build:client
-npm run test:unit --workspace=@getpaseo/server -- src/server/agent/providers/fork/trae-queue-status.test.ts src/server/agent/fork/queue-status.test.ts --maxWorkers=1 --bail=1
+npm run test:unit --workspace=@getpaseo/server -- src/server/agent/providers/fork/trae-queue-status.test.ts src/server/agent/providers/fork/trae-skill-warning.test.ts src/server/agent/fork/queue-status.test.ts --maxWorkers=1 --bail=1
 npm run test --workspace=@getpaseo/app -- src/fork/queue-snapshots.test.ts src/fork/queue-status-pill.browser.test.tsx --bail=1
 npm run typecheck
 npm run lint
@@ -88,10 +108,12 @@ For CSS changes, run the focused browser failure/retry test and real-app layout 
 
 ```sh
 npm run test --workspace=@getpaseo/app -- src/fork/appearance/section.browser.test.tsx --bail=1
-npm run test:e2e --workspace=@getpaseo/app -- e2e/browser/fork-custom-css.spec.ts --workers=1
+npm run test:e2e --workspace=@getpaseo/app -- e2e/browser/fork-custom-css.spec.ts e2e/browser/fork-warning-css.spec.ts --workers=1
 ```
 
 The layout test uses an isolated daemon and deterministic provider. It checks saved CSS after reload, actual transcript/composer geometry, narrow viewports, collapsed activity height and adjacent row spacing against paragraph line height, hover/expansion, and reset; screenshots record original, wide and narrow layouts.
+
+The warning browser test uses a deterministic ACP process through the real Trae provider registration and isolated daemon. It verifies both backend forms, normal answer text, saved CSS without the new variable, a custom color, reload, reset, and narrow layout.
 
 Build with `bash fork/macos/build.sh`. Dependencies and tools stay in ignored node_modules/.dev; ZIPs and reports stay in ignored artifacts. Existing prepared-checkout scripts under .dev are superseded by this tracked workflow.
 

@@ -1,3 +1,4 @@
+import { parseTraeSkillWarning } from "./fork/trae-skill-warning.js";
 import { parseTraeQueueStatus, withTraeQueueStatus } from "./fork/trae-queue-status.js";
 import type { Logger } from "pino";
 
@@ -19,6 +20,7 @@ export class TraeACPAgentClient extends GenericACPAgentClient {
       logger: options.logger,
       command: withTraeQueueStatus(options.command),
       sessionInfoParser: parseTraeQueueStatus,
+      notificationParser: parseTraeSkillWarning,
       env: options.env,
       providerId: options.providerId,
       label: options.label,
