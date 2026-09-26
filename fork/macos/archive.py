@@ -3,6 +3,7 @@ import json
 import os
 from pathlib import Path
 import plistlib
+import re
 import stat
 import struct
 import subprocess
@@ -64,9 +65,17 @@ for resource_file in app.rglob('_CodeSignature/CodeResources'):
                     assert hashlib.new(algorithm, target.read_bytes()).digest() == entry[key], target
                     resource_hashes += 1
 
+build_info = json.loads((root / '.dev/fork-build-info.json').read_text())
 version = plist['CFBundleShortVersionString']
-commit = subprocess.check_output(['git', 'rev-parse', '--short=9', 'HEAD'], cwd=root, text=True).strip()
-output = root / 'artifacts' / f'Paseo-{version}-bs-main-0926-{commit}-macos-arm64.zip'
+assert version == build_info['version']
+source_revision = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=root, text=True).strip()
+source_dirty = bool(subprocess.check_output(['git', 'status', '--porcelain'], cwd=root, text=True).strip())
+assert source_revision == build_info['commit'], 'HEAD changed during the build'
+assert source_dirty == build_info['dirty'], 'Working-tree state changed during the build'
+commit = build_info['shortCommit']
+branch = build_info['branch']
+branch_slug = re.sub(r'[^A-Za-z0-9._-]+', '-', branch).strip('-') or 'detached'
+output = root / 'artifacts' / f'Paseo-{version}-{branch_slug}-{commit}-macos-arm64.zip'
 note = root / 'fork/macos/INSTALL-MACOS.txt'
 assert note.is_file()
 with zipfile.ZipFile(output, 'w', zipfile.ZIP_DEFLATED, compresslevel=6, allowZip64=True) as archive:
@@ -83,6 +92,7 @@ with zipfile.ZipFile(output, 'w', zipfile.ZIP_DEFLATED, compresslevel=6, allowZi
                 archive.write(p, relative)
     archive.write(note, note.name)
     archive.write(root / 'fork/CHANGELOG.md', 'FORK-CHANGELOG.md')
+    archive.write(root / '.dev/fork-build-info.json', 'BUILD-INFO.json')
 with zipfile.ZipFile(output) as archive:
     assert archive.testzip() is None, 'ZIP integrity failed'
     executable = archive.getinfo('Paseo.app/Contents/MacOS/Paseo')
@@ -90,8 +100,6 @@ with zipfile.ZipFile(output) as archive:
     assert stat.S_ISLNK(archive.getinfo('Paseo.app/Contents/Frameworks/Electron Framework.framework/Versions/Current').external_attr >> 16)
 digest = hashlib.file_digest(output.open('rb'), 'sha256').hexdigest()
 output.with_suffix(output.suffix + '.sha256').write_text(f'{digest}  {output.name}\n')
-source_revision = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=root, text=True).strip()
-source_dirty = bool(subprocess.check_output(['git', 'status', '--porcelain'], cwd=root, text=True).strip())
-report = {'source_revision': source_revision, 'source_dirty': source_dirty, 'fork_branch': 'bs-main-0926', 'artifact': output.name, 'bytes': output.stat().st_size, 'sha256': digest, 'commit': commit, 'version': version, 'minimum_macos': plist['LSMinimumSystemVersion'], 'signing': 'ad-hoc; not Apple notarized', 'macos_runtime_tested': False, 'verified_arm64_macho_files': native_files, 'verified_resource_hashes': resource_hashes, 'verified_code_pages': verified_code_pages, 'signature_verification': 'Independent CodeDirectory page and special-slot hashes; rcodesign verify rejects empty ad-hoc CMS signatures; Apple codesign validation requires macOS'}
+report = {'source_revision': source_revision, 'source_dirty': source_dirty, 'fork_branch': branch, 'display_version': build_info['displayVersion'], 'artifact': output.name, 'bytes': output.stat().st_size, 'sha256': digest, 'commit': commit, 'version': version, 'minimum_macos': plist['LSMinimumSystemVersion'], 'signing': 'ad-hoc; not Apple notarized', 'macos_runtime_tested': False, 'verified_arm64_macho_files': native_files, 'verified_resource_hashes': resource_hashes, 'verified_code_pages': verified_code_pages, 'signature_verification': 'Independent CodeDirectory page and special-slot hashes; rcodesign verify rejects empty ad-hoc CMS signatures; Apple codesign validation requires macOS'}
 output.with_suffix(output.suffix + '.verification.json').write_text(json.dumps(report, indent=2) + '\n')
 print(json.dumps({**report, 'verified_arm64_macho_files': len(native_files)}, indent=2))

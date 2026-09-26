@@ -1,3 +1,4 @@
+import { forkVersionText } from "@/fork/build-version";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ComponentType, ReactNode } from "react";
 import {
@@ -1092,7 +1093,7 @@ export default function SettingsScreen({ view, openAddHostIntent = null }: Setti
   const lastOpenedAddHostIntentRef = useRef<string | null>(null);
   const isDesktopApp = isElectronRuntime();
   const appVersion = resolveAppVersion();
-  const appVersionText = formatVersionWithPrefix(appVersion);
+  const appVersionText = forkVersionText(formatVersionWithPrefix(appVersion));
   const isCompactLayout = useIsCompactFormFactor();
   const insets = useSafeAreaInsets();
   const insetBottomStyle = useMemo(() => ({ paddingBottom: insets.bottom }), [insets.bottom]);

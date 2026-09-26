@@ -6,6 +6,7 @@ const upstream = yaml.load(
   fs.readFileSync(path.join(root, "packages/desktop/electron-builder.yml"), "utf8"),
 );
 const tools = require("./toolchain.json");
+const buildInfo = require(path.join(root, ".dev/fork-build-info.json"));
 
 // Derive from upstream on every build; keep only the cross-build differences here.
 module.exports = {
@@ -13,6 +14,7 @@ module.exports = {
   directories: { ...upstream.directories, output: path.join(root, "artifacts/macos-build") },
   electronDist: path.join(root, ".dev/build-tools", tools.electron.file),
   publish: null,
+  extraMetadata: { ...upstream.extraMetadata, paseoForkBuild: buildInfo },
   mac: {
     ...upstream.mac,
     identity: null,

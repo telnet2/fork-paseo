@@ -65,7 +65,7 @@ Warning text is yellow/amber by default. Customize it in **Settings → Appearan
 
 Add the variable to your existing `:root` block to preserve your layout. The color applies to warning text; info/error notices and ordinary assistant text retain their styles. Stable selectors are `[data-paseo-notification="warning"]` and `[data-paseo-notification-text]`. Saved CSS without the variable uses the notification icon's amber; Reset CSS removes the override and keeps that default warning color.
 
-The connected daemon must run this fork to classify new Trae warnings. Old transcript text is not rewritten. The bundled desktop daemon includes the parser; remote hosts need the updated daemon too. No Trae source changes are required.
+The relay forwards encrypted traffic and does not extract queue or warning metadata. These features need no relay deployment. The connected daemon must run this fork to classify new Trae warnings. Old transcript text is not rewritten. The bundled desktop daemon includes the parser; remote hosts need the updated daemon too. No Trae source changes are required.
 
 The parser lives in `server/agent/providers/fork/trae-skill-warning.ts`. The generic ACP hook is optional and wired through create/resume; providers other than Trae retain their existing behavior. CSS alone cannot recognize unmarked text, and Trae supplies no typed warning extension to configure. Keep the text recognizer until Trae exposes severity metadata, then replace it and retain the same transport/rendering tests.
 
@@ -116,6 +116,16 @@ The layout test uses an isolated daemon and deterministic provider. It checks sa
 The warning browser test uses a deterministic ACP process through the real Trae provider registration and isolated daemon. It verifies both backend forms, normal answer text, saved CSS without the new variable, a custom color, reload, reset, and narrow layout.
 
 Build with `bash fork/macos/build.sh`. Dependencies and tools stay in ignored node_modules/.dev; ZIPs and reports stay in ignored artifacts. Existing prepared-checkout scripts under .dev are superseded by this tracked workflow.
+
+## Build identity
+
+The macOS build captures its package version, actual Git branch, full commit, nine-character commit, and dirty state in `.dev/fork-build-info.json`. Settings → About shows `v0.9.2 · bs-main-0926 · <commit>`, and the native Paseo → About Paseo panel shows the same branch/commit as its build label. Uncommitted builds include `dirty`; detached checkouts use `detached` as the branch.
+
+The fork build passes the display value to Expo through `EXPO_PUBLIC_PASEO_FORK_VERSION` and includes the same record in the Electron package metadata and `BUILD-INFO.json` inside the ZIP. The package verifier requires the renderer and native metadata to match. Archive names and verification reports use the captured branch and commit; archiving fails if HEAD or the clean/dirty state changed during the build. The renderer cache is cleared so a previous commit label cannot leak into a new build.
+
+This is a display label. Package versions, macOS bundle versions, daemon compatibility comparisons, and update checks retain the upstream numeric version. Builds outside this fork workflow show the ordinary version unless the display environment variable is supplied. The warning color `#f4bf4f` remains in the default Wide & compact stylesheet; saved CSS is preserved.
+
+For the version display, run `EXPO_PUBLIC_PASEO_FORK_VERSION='0.9.2 · bs-main-0926 · e2e-build' npm run test:e2e --workspace=@getpaseo/app -- e2e/browser/fork-build-version.spec.ts --workers=1`. The actual commit is checked again in the packaged renderer and metadata during the macOS build. Native About-panel appearance still needs a Mac check.
 
 ## Rebase, rollout and rollback
 

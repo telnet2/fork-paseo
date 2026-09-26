@@ -53,6 +53,7 @@ import { createExternalUrlOpener } from "./features/opener.js";
 import { createBrowserCaptureService } from "./features/browser-capture.js";
 import { registerEditorTargetHandlers } from "./features/editor-targets/ipc.js";
 import { resolveAppIconPath } from "./features/stamped-icon.js";
+import { configureForkAboutPanel } from "./fork/about.js";
 import { setupApplicationMenu } from "./features/menu.js";
 import {
   BROWSER_NEW_TAB_REQUEST_EVENT,
@@ -924,6 +925,7 @@ async function bootstrap(): Promise<void> {
   }
 
   await app.whenReady();
+  configureForkAboutPanel();
 
   const appDistDir = getAppDistDir();
   protocol.handle(APP_SCHEME, (request) => {

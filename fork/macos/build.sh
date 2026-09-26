@@ -7,8 +7,11 @@ export CI=1 EXPO_NO_TELEMETRY=1 CSC_IDENTITY_AUTO_DISCOVERY=false
 mkdir -p .dev artifacts
 trap 'echo "Build failed. See .dev/build-*.log, .dev/package-macos.log and .dev/sign-macos.log." >&2' ERR
 python3 fork/macos/prepare.py
+node fork/macos/build-info.cjs > .dev/fork-build-info.json
+EXPO_PUBLIC_PASEO_FORK_VERSION="$(node -p 'require("./.dev/fork-build-info.json").displayVersion')"
+export EXPO_PUBLIC_PASEO_FORK_VERSION
 npm run build:app-deps:clean > .dev/build-app-deps.log 2>&1
-(cd packages/app && PASEO_WEB_PLATFORM=electron ../../node_modules/.bin/expo export --platform web --max-workers 4) > .dev/build-renderer.log 2>&1
+(cd packages/app && PASEO_WEB_PLATFORM=electron ../../node_modules/.bin/expo export --platform web --max-workers 4 --clear) > .dev/build-renderer.log 2>&1
 {
   npm run build:relay:clean
   npm run build:clean --workspace=@getpaseo/server
