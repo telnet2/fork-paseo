@@ -2,6 +2,15 @@
 
 Upstream release notes remain in the upstream changelog. Entries here describe only bs-main-0926.
 
+## 2026-09-27 — Branch and commit in About (0.9.2 fork)
+
+- Show the build branch and commit in Settings → About and the native macOS About panel, including a dirty marker for uncommitted builds.
+- Generate one build-identity record for the renderer, Electron package, ZIP, and verification report. Preserve upstream numeric versions for compatibility and update checks.
+- Verify the shipped branch/commit label and default yellow warning CSS; retain saved custom styles.
+- Document that queue and warning extraction belongs to the daemon. The encrypted relay needs no update for either feature.
+
+Validation: the real-app About test passed with an injected branch/commit label; the connected host retained its ordinary version display. Workspace typecheck, lint, formatting, build-script syntax checks, build-identity generation, and both skill validators passed. Native About-panel appearance requires macOS.
+
 ## 2026-09-27 — Yellow skill warnings (0.9.2 fork)
 
 - Recognize Trae's complete skill-description truncation notice from both ACP backends and display it as a warning, separately from the following answer.

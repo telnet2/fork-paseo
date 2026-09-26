@@ -7,6 +7,7 @@ const resources = "artifacts/macos-build/mac-arm64/Paseo.app/Contents/Resources"
 const archive = `${resources}/app.asar`;
 const required = [
   "dist/main.js",
+  "dist/fork/about.js",
   "node_modules/@getpaseo/server/dist/server/server/agent/providers/fork/trae-queue-status.js",
   "node_modules/@getpaseo/protocol/dist/fork/queue-status.js",
   "node_modules/@getpaseo/server/dist/server/server/agent/providers/fork/trae-skill-warning.js",
@@ -64,7 +65,22 @@ assert(
 
 assert(
   rendererFiles.some((file) =>
-    fs.readFileSync(resources + "/app-dist/" + file, "utf8").includes("--paseo-warning-color"),
+    fs
+      .readFileSync(resources + "/app-dist/" + file, "utf8")
+      .includes("--paseo-warning-color: #f4bf4f"),
   ),
-  "Warning color customization missing from renderer",
+  "Default yellow warning CSS missing from renderer",
 );
+
+const buildInfo = JSON.parse(fs.readFileSync(".dev/fork-build-info.json", "utf8"));
+const appPackage = JSON.parse(asar.extractFile(archive, "package.json").toString("utf8"));
+assert.equal(appPackage.version, buildInfo.version);
+assert.equal(metadata.CFBundleShortVersionString, buildInfo.version);
+assert.deepEqual(appPackage.paseoForkBuild, buildInfo);
+assert(
+  rendererFiles.some((file) =>
+    fs.readFileSync(resources + "/app-dist/" + file, "utf8").includes(buildInfo.displayVersion),
+  ),
+  "Renderer build identity differs from packaged metadata",
+);
+console.log(`Fork build identity verified: ${buildInfo.displayVersion}`);

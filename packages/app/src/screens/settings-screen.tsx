@@ -1,3 +1,4 @@
+import { forkVersionText } from "@/fork/build-version";
 import { useHardwareKeyboardPresent } from "@/keyboard";
 import { useAddHost } from "@/hosts/add-host";
 import { useCallback, useMemo, useRef, useState } from "react";
@@ -1122,7 +1123,7 @@ export default function SettingsScreen({ view }: SettingsScreenProps) {
   const isDesktopApp = isElectronRuntime();
   const hardwareKeyboardPresent = useHardwareKeyboardPresent();
   const appVersion = resolveAppVersion();
-  const appVersionText = formatVersionWithPrefix(appVersion);
+  const appVersionText = forkVersionText(formatVersionWithPrefix(appVersion));
   const isCompactLayout = useIsCompactFormFactor();
   const insets = useSafeAreaInsets();
   const insetBottomStyle = useMemo(() => ({ paddingBottom: insets.bottom }), [insets.bottom]);
