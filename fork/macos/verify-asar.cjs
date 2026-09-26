@@ -3,6 +3,7 @@ const fs = require("node:fs");
 const crypto = require("node:crypto");
 const asar = require("@electron/asar");
 const plist = require("plist");
+const ts = require("typescript");
 const resources = "artifacts/macos-build/mac-arm64/Paseo.app/Contents/Resources";
 const archive = `${resources}/app.asar`;
 const required = [
@@ -78,9 +79,19 @@ assert.equal(appPackage.version, buildInfo.version);
 assert.equal(metadata.CFBundleShortVersionString, buildInfo.version);
 assert.deepEqual(appPackage.paseoForkBuild, buildInfo);
 assert(
-  rendererFiles.some((file) =>
-    fs.readFileSync(resources + "/app-dist/" + file, "utf8").includes(buildInfo.displayVersion),
-  ),
+  rendererFiles.some((file) => {
+    // Parse literals so minifier escapes (such as \xb7) compare as displayed text.
+    const source = ts.createSourceFile(
+      file,
+      fs.readFileSync(resources + "/app-dist/" + file, "utf8"),
+      ts.ScriptTarget.Latest,
+    );
+    function visit(node) {
+      if (ts.isStringLiteralLike(node) && node.text === buildInfo.displayVersion) return true;
+      return ts.forEachChild(node, visit);
+    }
+    return Boolean(visit(source));
+  }),
   "Renderer build identity differs from packaged metadata",
 );
 console.log(`Fork build identity verified: ${buildInfo.displayVersion}`);

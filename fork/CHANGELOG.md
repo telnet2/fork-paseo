@@ -6,7 +6,7 @@ Upstream release notes remain in the upstream changelog. Entries here describe o
 
 - Show the build branch and commit in Settings → About and the native macOS About panel, including a dirty marker for uncommitted builds.
 - Generate one build-identity record for the renderer, Electron package, ZIP, and verification report. Preserve upstream numeric versions for compatibility and update checks.
-- Verify the shipped branch/commit label and default yellow warning CSS; retain saved custom styles.
+- Verify the shipped branch/commit label by parsing JavaScript string literals so minifier escapes preserve their displayed value. Check default yellow warning CSS and retain saved custom styles.
 - Document that queue and warning extraction belongs to the daemon. The encrypted relay needs no update for either feature.
 
 Validation: the real-app About test passed with an injected branch/commit label; the connected host retained its ordinary version display. Workspace typecheck, lint, formatting, build-script syntax checks, build-identity generation, and both skill validators passed. Native About-panel appearance requires macOS.
