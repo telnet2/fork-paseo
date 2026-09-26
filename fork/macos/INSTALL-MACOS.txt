@@ -1,0 +1,30 @@
+Paseo fork for Apple Silicon (bs-main-0926)
+
+Requires macOS 13 or later on an Apple Silicon Mac.
+
+1. Quit the existing Paseo app.
+2. Extract the ZIP in Finder and copy Paseo.app into Applications.
+3. Open Paseo. Install and authenticate traecli separately.
+4. Select the TraeCode CLI provider. This fork enables queue reporting unless
+   its command explicitly disables features.headless_queue_status.
+
+If connecting to a remote Paseo host, that host must also run this fork's
+daemon. The bundled local daemon already includes the queue integration.
+
+This build is ad-hoc signed, not Apple-notarized. If macOS blocks it, use
+System Settings > Privacy & Security > Open Anyway. If it reports damage
+and offers no Open Anyway button, remove quarantine from this local copy:
+
+  xattr -dr com.apple.quarantine /Applications/Paseo.app
+  open /Applications/Paseo.app
+
+For Apple signature verification on the Mac:
+  codesign --verify --deep --strict --verbose=2 /Applications/Paseo.app
+
+Node.js is bundled. No separate Node installation is required.
+This build uses Paseo's existing app identity and settings directory.
+It has no upstream update feed; install future fork archives manually.
+
+See FORK-CHANGELOG.md inside the ZIP and the accompanying verification
+report for source revision, checksum and build checks. Linux build checks
+do not establish that Gatekeeper accepts or macOS can launch the app.

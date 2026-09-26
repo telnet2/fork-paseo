@@ -1,0 +1,4 @@
+interface:
+  display_name: "Paseo Fork Rebase"
+  short_description: "Rebase the Paseo fork with isolated changes"
+  default_prompt: "Use $paseo-fork-rebase to update bs-main-0926 onto upstream main."
