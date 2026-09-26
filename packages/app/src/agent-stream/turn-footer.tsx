@@ -1,3 +1,4 @@
+import { appearanceDataSets } from "@/fork/appearance/anchors";
 import React, { memo, useCallback, useMemo, type ReactNode } from "react";
 import { View } from "react-native";
 import { StyleSheet, withUnistyles } from "react-native-unistyles";
@@ -213,7 +214,7 @@ function CompletedTurnFooter({
 function TurnFooterRow({ children }: { children: ReactNode }) {
   const rowStyle = useMemo(() => [stylesheet.streamItemWrapper, stylesheet.turnFooterRow], []);
   return (
-    <View style={rowStyle} testID="turn-footer">
+    <View dataSet={appearanceDataSets.transcript} style={rowStyle} testID="turn-footer">
       {children}
     </View>
   );

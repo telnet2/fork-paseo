@@ -25,11 +25,11 @@ When dependencies change, check that the package-lock paths in prepare.py still 
 
 ## Validate and package
 
-1. Run the focused queue tests listed in `fork/README.md`, workspace typecheck, and lint. Rebuild dependent workspace declarations before diagnosing stale types. Install headless Chromium with the repository's Playwright version when needed.
+1. Run the focused queue and CSS tests listed in `fork/README.md`, workspace typecheck, and lint. Rebuild dependent workspace declarations before diagnosing stale types. Install headless Chromium with the repository's Playwright version when needed.
 2. Record branch, HEAD, and working-tree state. Prefer a clean committed tree so the artifact maps to an exact revision. Keep prior ZIPs.
 3. Run `bash fork/macos/build.sh`. It rebuilds renderer, daemon, CLI and Electron main; derives builder configuration from upstream; packages arm64; verifies the ASAR and required native dependencies; signs ad-hoc; verifies Mach-O code pages and bundle resources; creates a ZIP preserving symlinks and permissions.
 4. Inspect `artifacts/Paseo-*-bs-main-0926-*-macos-arm64.zip.verification.json` and its SHA-256 sidecar. A failed verifier is a failed build. Report the archive path, size, checksum, source revision, and minimum macOS.
-5. On a Mac, extract and copy Paseo.app to Applications. Run `codesign --verify --deep --strict --verbose=2 /Applications/Paseo.app`, then launch and connect a Trae provider to verify the chip. Keep this marked untested until performed on macOS.
+5. On a Mac, extract and copy Paseo.app to Applications. Run `codesign --verify --deep --strict --verbose=2 /Applications/Paseo.app`, then launch and connect a Trae provider to verify the chip. Check Appearance → Custom CSS, save/reload/reset, and transcript scrolling at wide and narrow window sizes. Keep this marked untested until performed on macOS.
 
 Inspect `.dev/build-*.log`, `.dev/package-macos.log`, and `.dev/sign-macos.log` on failure. The rcodesign verifier rejects empty CMS data on ad-hoc signatures; use the included CodeDirectory verifier on Linux and Apple's codesign on macOS. Do not describe the Linux checks as Apple trust or Gatekeeper validation.
 

@@ -1,3 +1,4 @@
+import { appearanceDataSets } from "@/fork/appearance/anchors";
 import { useDisclosureHold } from "@/agent-stream/disclosure";
 import { MessagePreview, MessageSender } from "@/components/user-message";
 import { useStableEvent } from "@/hooks/use-stable-event";
@@ -1221,13 +1222,17 @@ export const AssistantMessage = memo(function AssistantMessage({
     [occurrenceKey, revealedMessage.length],
   );
 
+  const appearanceDataSet = useMemo(
+    () => ({ ...revealDataSet, paseoAssistantSpacing: spacing }),
+    [revealDataSet, spacing],
+  );
   const measureMessage = useStableEvent((event: import("react-native").LayoutChangeEvent) => {
     setAssistantMessageHeight({ markdown: revealedMessage, ...event.nativeEvent.layout });
   });
   return (
     <View
       testID="assistant-message"
-      dataSet={revealDataSet}
+      dataSet={appearanceDataSet}
       style={assistantContainerStyle}
       onLayout={measureMessage}
     >

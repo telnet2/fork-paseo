@@ -1,3 +1,4 @@
+import { appearanceDataSets, streamRowDataSet } from "@/fork/appearance/anchors";
 import { ChatFind, ChatFindExpansion } from "@/agent-stream/chat-find";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import React, {
@@ -126,7 +127,7 @@ function renderLiveAuxiliaryNode(input: {
     <>
       {input.turnFooter}
       {input.pendingPermissions ? (
-        <View style={stylesheet.contentWrapper}>
+        <View dataSet={appearanceDataSets.transcript} style={stylesheet.contentWrapper}>
           <View style={stylesheet.listHeaderContent}>{input.pendingPermissions}</View>
         </View>
       ) : null}
@@ -188,7 +189,11 @@ function renderStreamItemWithTurnFooter(input: {
     />
   ) : null;
   const content = (
-    <StreamItemWrapper gapBelow={input.layoutItem.gapBelow} turnIndent={input.turnIndent}>
+    <StreamItemWrapper
+      itemKind={input.layoutItem.item.kind}
+      gapBelow={input.layoutItem.gapBelow}
+      turnIndent={input.turnIndent}
+    >
       {input.content}
     </StreamItemWrapper>
   );
@@ -1849,38 +1854,40 @@ const permissionStyles = StyleSheet.create((theme) => ({
 }));
 
 interface StreamItemWrapperProps {
+  itemKind: StreamItem["kind"];
   gapBelow: number;
   turnIndent: TurnIndent;
   children: ReactNode;
 }
 
-function StreamItemWrapper({ gapBelow, turnIndent, children }: StreamItemWrapperProps) {
+function StreamItemWrapper({ gapBelow, itemKind, turnIndent, children }: StreamItemWrapperProps) {
+  const wrapperGap = turnIndent === "nested" || turnIndent === "openedHost" ? 0 : gapBelow;
   const wrapperStyle = useMemo(
     () => [
       stylesheet.streamItemWrapper,
-      { marginBottom: turnIndent === "nested" || turnIndent === "openedHost" ? 0 : gapBelow },
+      { marginBottom: wrapperGap },
     ],
-    [gapBelow, turnIndent],
+    [wrapperGap],
   );
   const gapStyle = useMemo(() => ({ paddingBottom: gapBelow }), [gapBelow]);
   switch (turnIndent) {
     case "none":
     case "openedHost":
       return (
-        <View style={wrapperStyle}>
+        <View dataSet={streamRowDataSet(itemKind, wrapperGap)} style={wrapperStyle}>
           {children}
           {turnIndent === "openedHost" ? <IndentRail style={gapStyle} /> : null}
         </View>
       );
     case "nested":
       return (
-        <View style={wrapperStyle}>
+        <View dataSet={streamRowDataSet(itemKind, wrapperGap)} style={wrapperStyle}>
           <IndentRail style={gapStyle}>{children}</IndentRail>
         </View>
       );
     case "lastNested":
       return (
-        <View style={wrapperStyle}>
+        <View dataSet={streamRowDataSet(itemKind, wrapperGap)} style={wrapperStyle}>
           <IndentRail>{children}</IndentRail>
         </View>
       );

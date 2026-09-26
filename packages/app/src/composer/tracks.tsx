@@ -1,3 +1,4 @@
+import { appearanceDataSets } from "@/fork/appearance/anchors";
 import { useCallback, useMemo, useState, type ReactElement, type ReactNode } from "react";
 import { Pressable, Text, View } from "react-native";
 import { GestureDetector } from "react-native-gesture-handler";
@@ -46,7 +47,7 @@ export function ComposerTrackBar({ children }: { children: ReactNode }): ReactEl
   const scrollBoundary = useHorizontalScrollBoundary();
   return (
     <View style={styles.bar} pointerEvents="box-none">
-      <View style={styles.trackViewport} pointerEvents="box-none">
+      <View dataSet={appearanceDataSets.tracks} style={styles.trackViewport} pointerEvents="box-none">
         <GestureDetector gesture={scrollGesture}>
           <Animated.ScrollView
             testID="composer-track-scroll"

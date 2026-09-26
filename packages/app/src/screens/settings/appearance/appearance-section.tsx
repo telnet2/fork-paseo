@@ -34,6 +34,7 @@ import {
 import { DEFAULT_MONO_FONT_STACK, DEFAULT_UI_FONT_STACK } from "@/styles/theme";
 import { isNative } from "@/constants/platform";
 import { settingsStyles } from "@/styles/settings";
+import { CustomCssSection } from "@/fork/appearance/section";
 import { AppearancePreview } from "./appearance-preview";
 
 // Platform default stacks can be the bare native tokens ("normal"/"monospace");
@@ -435,6 +436,7 @@ export function AppearanceSection() {
           <ThemePicker />
         </View>
       </SettingsSection>
+      <CustomCssSection />
       <SettingsSection title={t("settings.appearance.fonts.title")}>
         <View style={settingsStyles.card}>
           {showInterfaceFontFamilyRow ? (

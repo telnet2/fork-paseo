@@ -20,6 +20,7 @@ import {
   type PluginThemeOption,
 } from "@/plugins/themes";
 import { PLUGIN_THEME_NAMES, PLUGIN_THEME_PREFERENCE, THEME_TO_UNISTYLES } from "@/styles/theme";
+import { CustomCssProvider } from "@/fork/appearance/provider";
 import { applyAppearance } from "./apply";
 import { AppearanceSystemBars } from "./system-bars";
 
@@ -110,7 +111,7 @@ export function AppearanceProvider({ children }: { children: ReactNode }) {
   return (
     <ContributedThemesContext.Provider value={value}>
       <AppearanceSystemBars />
-      {children}
+      <CustomCssProvider>{children}</CustomCssProvider>
     </ContributedThemesContext.Provider>
   );
 }

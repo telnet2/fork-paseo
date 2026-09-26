@@ -17,6 +17,36 @@ Queue status belongs to the current turn. Ready clears it explicitly with null. 
 
 The chip shares the task pill's popover/sheet component and composer clearance. Position is shown verbatim, including zero; no ETA is inferred.
 
+## Custom CSS
+
+Desktop and browser clients expose **Settings → Appearance → Custom CSS**. The first launch uses the Wide & compact preset: conversation rows and the composer fill the available width, with smaller paragraph and activity gaps. Apply saves to this client's local storage and updates open views immediately. Reset CSS saves an empty stylesheet and restores upstream styles. Native iOS/Android clients retain upstream appearance.
+
+The editable preset is:
+
+```css
+:root {
+  --paseo-content-max-width: none;
+  --paseo-content-padding: 4px;
+  --paseo-paragraph-gap: 8px;
+  --paseo-assistant-padding: 4px;
+  --paseo-activity-gap: 2px;
+}
+```
+
+Use `1100px` in place of `none` to cap the reading width. Content padding is the inner transcript gutter; Paseo also keeps its responsive outer gutter. Paragraph gap applies to Markdown paragraphs and split streaming blocks. Assistant padding controls the space around text beside reasoning/tool summaries; compact edges between split blocks remain zero. Activity gap controls text/activity boundaries. Font size and line height remain controlled by the existing Appearance settings.
+
+Ordinary CSS rules are accepted too. The stable selectors are `[data-paseo-content="transcript"]`, `[data-paseo-content="composer"]`, `[data-paseo-content="tracks"]`, and `[data-paseo-assistant-spacing]`. For example:
+
+```css
+[data-paseo-assistant-spacing] a {
+  text-decoration-thickness: 2px;
+}
+```
+
+CSS lives under local-storage key `paseo.fork.custom-css.v1`, separately from upstream preferences. Browser tabs on the same origin synchronize it; remote daemons and other devices do not store or receive it. To recover if a rule hides Settings, run `localStorage.setItem("paseo.fork.custom-css.v1", ""); location.reload();` in the client developer console.
+
+The implementation is in `packages/app/src/fork/appearance/`. Upstream hooks mount the provider/editor and mark layout surfaces with stable data attributes; the fork stylesheet owns all overrides. Paseo's configuration and plugin-theme API expose no custom CSS or layout tokens. A daemon wrapper cannot style the Electron renderer. Keep these hooks until upstream provides equivalent client CSS customization, then migrate the stored stylesheet and drop them. Do not override virtualizer positioning or measured heights; width/spacing changes use the existing ResizeObserver measurement path.
+
 ## Ownership and integration sites
 
 | Concern                                         | Owner                                            |
@@ -26,6 +56,7 @@ The chip shares the task pill's popover/sheet component and composer clearance. 
 | State transitions and deduplication             | server agent/fork/queue-status.ts                |
 | Wire schema                                     | protocol/src/fork/queue-status.ts                |
 | Subscription, labels and chip                   | app/src/fork/                                    |
+| Client CSS persistence, editor and rules        | app/src/fork/appearance/                         |
 | Build environment and package verification      | fork/macos/                                      |
 
 The existing files contain only integration hooks: ACP parser option plumbing (create/resume), Trae adapter configuration, internal event union, manager event dispatch/state normalization, snapshot schema/projection, app snapshot mappings, and track visibility/rendering. Generated validators remain ignored outputs.
@@ -50,6 +81,15 @@ npm run lint
 
 The server test uses real ACP SDK serialization and AgentManager snapshots with deterministic queue notifications. It covers explicit clearing, snapshot replay, persistence exclusion, unrelated sessions, completion, cancellation, failure, closure and consecutive turns. The focused state test covers duplicate and stale-turn events. Client tests cover snapshot round-tripping and explicit or old-daemon clears. The browser test exercises the real chip and expandable message. On first run, Vite may optimize dependencies and reload the browser; rerun the same focused command after optimization finishes.
 
+For CSS changes, run the focused browser failure/retry test and real-app layout test:
+
+```sh
+npm run test --workspace=@getpaseo/app -- src/fork/appearance/section.browser.test.tsx --bail=1
+npm run test:e2e --workspace=@getpaseo/app -- e2e/browser/fork-custom-css.spec.ts --workers=1
+```
+
+The layout test uses an isolated daemon and deterministic provider. It checks saved CSS after reload, actual transcript/composer geometry, narrow viewports, and reset; screenshots record original, wide and narrow layouts.
+
 Build with `bash fork/macos/build.sh`. Dependencies and tools stay in ignored node_modules/.dev; ZIPs and reports stay in ignored artifacts. Existing prepared-checkout scripts under .dev are superseded by this tracked workflow.
 
 ## Rebase, rollout and rollback
@@ -66,6 +106,7 @@ Roll back by reinstalling the previous archive. No queue-state migration is need
 | ---------- | -------------------------------------------------------------------------------------------------------------- |
 | 2026-09-27 | Create bs-main-0926 from c081e0350; use isolated source files and small core hooks, as requested.              |
 | 2026-09-27 | Transport transient queue status through existing snapshots, with no new public event kind or persisted state. |
+| 2026-09-27 | Add local client CSS with stable layout anchors and a Wide & compact default preset.                           |
 | 2026-09-27 | Track macOS cross-build tooling as upstream-derived configuration and verified native archives.                |
 
 The earlier investigation in artifacts/trae-queue-status-design.md is archived and non-normative. This document owns the implemented design.

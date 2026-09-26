@@ -53,3 +53,10 @@ assert.ok(
   ),
   "Queue chip missing from renderer",
 );
+
+assert(
+  rendererFiles.some((file) =>
+    fs.readFileSync(resources + "/app-dist/" + file, "utf8").includes("paseo.fork.custom-css.v1"),
+  ),
+  "Custom CSS settings missing from renderer",
+);
