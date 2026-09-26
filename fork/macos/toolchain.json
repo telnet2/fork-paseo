@@ -1,0 +1,19 @@
+{
+  "node": {
+    "file": "node-v22.20.0-linux-x64.tar.xz",
+    "directory": "node-v22.20.0-linux-x64",
+    "url": "https://nodejs.org/dist/v22.20.0/node-v22.20.0-linux-x64.tar.xz",
+    "sha256": "00bbd05e306ea68b6e13e17360d0e2f680b493ef95f2fea1c4296ff7437530bc"
+  },
+  "electron": {
+    "file": "electron-v44.2.0-darwin-arm64.zip",
+    "url": "https://github.com/electron/electron/releases/download/v44.2.0/electron-v44.2.0-darwin-arm64.zip",
+    "sha256": "f906dff5d054b1b92e5711781b13cc206fd7139ce66467503b9d0a3e6fbc9b02"
+  },
+  "codesign": {
+    "file": "apple-codesign-0.29.0-x86_64-unknown-linux-musl.tar.gz",
+    "directory": "apple-codesign-0.29.0-x86_64-unknown-linux-musl",
+    "url": "https://github.com/indygreg/apple-platform-rs/releases/download/apple-codesign/0.29.0/apple-codesign-0.29.0-x86_64-unknown-linux-musl.tar.gz",
+    "sha256": "dbe85cedd8ee4217b64e9a0e4c2aef92ab8bcaaa41f20bde99781ff02e600002"
+  }
+}

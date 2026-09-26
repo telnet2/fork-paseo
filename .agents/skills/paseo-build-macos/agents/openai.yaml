@@ -1,0 +1,4 @@
+interface:
+  display_name: "Paseo macOS Build"
+  short_description: "Build and verify an Apple Silicon Paseo archive"
+  default_prompt: "Use $paseo-build-macos to build the fork for Apple Silicon."
