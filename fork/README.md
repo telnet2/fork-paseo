@@ -21,21 +21,24 @@ The chip shares the task pill's popover/sheet component and composer clearance. 
 
 Desktop and browser clients expose **Settings → Appearance → Custom CSS**. The first launch uses the Wide & compact preset: conversation rows and the composer fill the available width, with smaller paragraph and activity gaps. Apply saves to this client's local storage and updates open views immediately. Reset CSS saves an empty stylesheet and restores upstream styles. Native iOS/Android clients retain upstream appearance.
 
-The editable preset is:
+The variables at the top of the editable preset are:
 
 ```css
 :root {
   --paseo-content-max-width: none;
   --paseo-content-padding: 4px;
-  --paseo-paragraph-gap: 8px;
-  --paseo-assistant-padding: 4px;
-  --paseo-activity-gap: 2px;
+  --paseo-paragraph-gap: 4px;
+  --paseo-assistant-padding: 2px;
+  --paseo-activity-gap: 0px;
+  --paseo-activity-line-height: 21px;
 }
 ```
 
-Use `1100px` in place of `none` to cap the reading width. Content padding is the inner transcript gutter; Paseo also keeps its responsive outer gutter. Paragraph gap applies to Markdown paragraphs and split streaming blocks. Assistant padding controls the space around text beside reasoning/tool summaries; compact edges between split blocks remain zero. Activity gap controls text/activity boundaries. Font size and line height remain controlled by the existing Appearance settings.
+Use `1100px` in place of `none` to cap the reading width. Content padding is the inner transcript gutter; Paseo also keeps its responsive outer gutter. Paragraph gap applies to Markdown paragraphs and split streaming blocks. Assistant padding controls the space around text beside reasoning/tool summaries; compact edges between split blocks remain zero. Activity gap controls text/activity boundaries. The preset's selector rules below the variables remove padding and invisible borders inside collapsed activity rows. Keep those rules when editing the variables. Activity line height controls their label and icon slot; 21 px matches the default conversation line height. If you change the content font size, use its line height (content size × 1.4, rounded) here as well. Expanded details retain upstream spacing. The preset also sets transcript left padding to 48 px for Chat outline clearance while retaining the 4 px right inset.
 
-Ordinary CSS rules are accepted too. The stable selectors are `[data-paseo-content="transcript"]`, `[data-paseo-content="composer"]`, `[data-paseo-content="tracks"]`, and `[data-paseo-assistant-spacing]`. For example:
+Saved custom CSS is never overwritten on upgrade. Select **Wide & compact**, then **Apply CSS**, to load the revised preset. Changing only `--paseo-activity-gap` affects the space between text and activities; it cannot remove internal row padding.
+
+Ordinary CSS rules are accepted too. The stable selectors are `[data-paseo-content="transcript"]`, `[data-paseo-content="composer"]`, `[data-paseo-content="tracks"]`, `[data-paseo-assistant-spacing]`, `[data-paseo-activity="collapsed"]`, and the activity header/icon/open-file attributes used in the preset. For example:
 
 ```css
 [data-paseo-assistant-spacing] a {
@@ -88,7 +91,7 @@ npm run test --workspace=@getpaseo/app -- src/fork/appearance/section.browser.te
 npm run test:e2e --workspace=@getpaseo/app -- e2e/browser/fork-custom-css.spec.ts --workers=1
 ```
 
-The layout test uses an isolated daemon and deterministic provider. It checks saved CSS after reload, actual transcript/composer geometry, narrow viewports, and reset; screenshots record original, wide and narrow layouts.
+The layout test uses an isolated daemon and deterministic provider. It checks saved CSS after reload, actual transcript/composer geometry, narrow viewports, collapsed activity height and adjacent row spacing against paragraph line height, hover/expansion, and reset; screenshots record original, wide and narrow layouts.
 
 Build with `bash fork/macos/build.sh`. Dependencies and tools stay in ignored node_modules/.dev; ZIPs and reports stay in ignored artifacts. Existing prepared-checkout scripts under .dev are superseded by this tracked workflow.
 

@@ -3,9 +3,31 @@ export const CUSTOM_CSS_KEY = "paseo.fork.custom-css.v1";
 export const WIDE_COMPACT_CSS = `:root {
   --paseo-content-max-width: none;
   --paseo-content-padding: 4px;
-  --paseo-paragraph-gap: 8px;
-  --paseo-assistant-padding: 4px;
-  --paseo-activity-gap: 2px;
+  --paseo-paragraph-gap: 4px;
+  --paseo-assistant-padding: 2px;
+  --paseo-activity-gap: 0px;
+  --paseo-activity-line-height: 21px;
+}
+
+[data-paseo-content="transcript"] {
+  padding-left: 48px !important;
+}
+
+[data-paseo-content="transcript"] [data-paseo-activity="collapsed"] [data-paseo-activity-header] {
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  border-top-width: 0 !important;
+  border-bottom-width: 0 !important;
+  line-height: var(--paseo-activity-line-height, 21px) !important;
+}
+
+[data-paseo-content="transcript"] [data-paseo-activity="collapsed"] [data-paseo-activity-icon] {
+  height: var(--paseo-activity-line-height, 21px) !important;
+}
+
+[data-paseo-content="transcript"] [data-paseo-activity="collapsed"] [data-paseo-activity-open-file] {
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
 }
 `;
 
