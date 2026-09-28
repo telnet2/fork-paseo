@@ -7,8 +7,11 @@ import type { ProviderSnapshotManager } from "./agent/provider-snapshot-manager.
 import type { StructuredGenerationDaemonConfig } from "./agent/structured-generation-providers.js";
 import {
   attemptFirstAgentBranchAutoName,
+  findAvailableBranchName,
   type AttemptFirstAgentBranchAutoNameResult,
 } from "./paseo-worktree-service.js";
+import { localBranchExists } from "../utils/checkout-git.js";
+import { validateBranchSlug } from "../utils/worktree.js";
 import type { GitMutationService } from "./session/git-mutation/git-mutation-service.js";
 import type { WorkspaceGitService } from "./workspace-git-service.js";
 import type { PersistedWorkspaceRecord, WorkspaceRegistry } from "./workspace-registry.js";
@@ -101,6 +104,32 @@ export class WorkspaceAutoName {
         }),
       { cwd: input.cwd, message: "Failed to auto-name directory workspace title" },
     );
+  }
+
+  async generateForWorktreeCreation(
+    input: {
+      cwd: string;
+      firstAgentContext: FirstAgentContext;
+    },
+    context: ScheduleContext = {},
+  ): Promise<GeneratedWorkspaceName | null> {
+    const generated = await this.generateFromContext({
+      cwd: input.cwd,
+      firstAgentContext: input.firstAgentContext,
+      currentSelection: context.currentSelection ?? null,
+    });
+    const branchName = generated?.branch;
+    if (!branchName || !validateBranchSlug(branchName).valid) {
+      return generated ? { ...generated, branch: null } : null;
+    }
+    return {
+      ...generated,
+      branch: await findAvailableBranchName({
+        cwd: input.cwd,
+        desiredName: branchName,
+        localBranchExists,
+      }),
+    };
   }
 
   private async maybeAutoNameWorkspaceBranchForFirstAgent(input: {

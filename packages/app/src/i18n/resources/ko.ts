@@ -1267,7 +1267,20 @@ export const ko: TranslationResources = {
     isolation: {
       local: "로컬",
       worktree: "새 워크트리",
+      resume: "워크스페이스 재개",
       label: "격리",
+    },
+    resume: {
+      directory: "워크스페이스 디렉터리",
+      chooseDirectory: "디렉터리 선택",
+      searchPlaceholder: "디렉터리 검색 또는 경로 입력",
+      searching: "디렉터리 검색 중...",
+      noDirectories: "일치하는 디렉터리가 없습니다.",
+      tooltip: "이 호스트의 기존 디렉터리 열기",
+    },
+    worktree: {
+      branchName: "브랜치 이름",
+      branchNamePlaceholder: "브랜치 이름(비워 두면 자동 생성)",
     },
     fields: {
       project: "프로젝트",
@@ -2692,6 +2705,9 @@ export const ko: TranslationResources = {
         failedDescription: "다시 로드하여 재시도하세요.",
       },
       worktree: {
+        root: "워크트리 루트",
+        rootAccessibility: "워크트리 루트 디렉터리",
+        rootPlaceholder: "기본값: Paseo 데이터 디렉터리",
         title: "워크트리 수명 주기 훅",
         info: "이 프로젝트에서 워크트리가 생성되거나 정리될 때 실행되는 명령",
         docs: "문서",

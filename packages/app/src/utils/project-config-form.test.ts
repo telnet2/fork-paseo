@@ -5,6 +5,7 @@ import { applyDraftToConfig, configToDraft, type ProjectConfigDraft } from "./pr
 
 function emptyDraft(): ProjectConfigDraft {
   return {
+    worktreeRootText: "",
     setupText: "",
     setupOriginalKind: "missing",
     teardownText: "",
@@ -40,6 +41,18 @@ describe("configToDraft", () => {
     });
     expect(draft.teardownText).toBe("docker compose down\nrm -rf .cache");
     expect(draft.teardownOriginalKind).toBe("array");
+  });
+
+  it("round-trips a configured worktree root", () => {
+    const base: PaseoConfigRaw = { worktree: { root: "../worktrees" } };
+    const draft = configToDraft(base);
+    expect(draft.worktreeRootText).toBe("../worktrees");
+
+    draft.worktreeRootText = "  /srv/project-worktrees  ";
+    expect(applyDraftToConfig({ draft, base }).worktree?.root).toBe("/srv/project-worktrees");
+
+    draft.worktreeRootText = "";
+    expect(applyDraftToConfig({ draft, base }).worktree).toBeUndefined();
   });
 
   it("converts a scripts record into draft rows with stable local ids", () => {

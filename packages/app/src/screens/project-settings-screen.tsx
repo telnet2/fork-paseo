@@ -544,6 +544,10 @@ function ProjectConfigForm({
     setDraft((prev) => updater(prev));
   }, []);
 
+  const handleWorktreeRootChange = useCallback(
+    (text: string) => updateDraft((d) => ({ ...d, worktreeRootText: text })),
+    [updateDraft],
+  );
   const handleSetupChange = useCallback(
     (text: string) => updateDraft((d) => ({ ...d, setupText: text })),
     [updateDraft],
@@ -695,6 +699,22 @@ function ProjectConfigForm({
         info={t("settings.project.worktree.info")}
         testID="worktree-group"
       >
+        <SettingsSection title={t("settings.project.worktree.root")} testID="worktree-root-section">
+          <View style={settingsStyles.card}>
+            <TextInput
+              testID="worktree-root-input"
+              accessibilityLabel={t("settings.project.worktree.rootAccessibility")}
+              initialValue={draft.worktreeRootText}
+              onChangeText={handleWorktreeRootChange}
+              placeholder={t("settings.project.worktree.rootPlaceholder")}
+              placeholderTextColor={styles.placeholderColor.color}
+              autoCapitalize="none"
+              autoCorrect={false}
+              style={styles.worktreeRootInput}
+            />
+          </View>
+        </SettingsSection>
+
         <SettingsSection
           title={t("settings.project.worktree.setup")}
           testID="worktree-setup-section"
@@ -1173,6 +1193,12 @@ const styles = StyleSheet.create((theme) => ({
   emptyScripts: {
     color: theme.colors.foregroundMuted,
     fontSize: theme.fontSize.base,
+  },
+  worktreeRootInput: {
+    color: theme.colors.foreground,
+    fontSize: theme.fontSize.base,
+    paddingVertical: theme.spacing[3],
+    paddingHorizontal: theme.spacing[4],
   },
   scriptRow: {
     flexDirection: "row",

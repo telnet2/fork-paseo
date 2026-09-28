@@ -16,7 +16,7 @@ This page covers the git-specific details: where worktrees live, how branches ar
 
 ## Layout and workflow
 
-Worktrees live under `$PASEO_HOME/worktrees/` by default, grouped by a hash of the source checkout path. You can change the base directory with `worktrees.root` in `config.json`. Each worktree gets a slug and a branch when its workspace is created.
+Worktrees live under `$PASEO_HOME/worktrees/` by default, grouped by a hash of the source checkout path. You can change this shared base directory with `worktrees.root` in the daemon's `config.json`. Each worktree gets a slug and a branch when its workspace is created.
 
 ```
 ~/.paseo/worktrees/
@@ -25,7 +25,7 @@ Worktrees live under `$PASEO_HOME/worktrees/` by default, grouped by a hash of t
     └── bold-owl/
 ```
 
-With a custom root, Paseo keeps the same hashed layout under that directory:
+The daemon-level root keeps the same hashed layout under that directory:
 
 ```json
 {
@@ -35,12 +35,33 @@ With a custom root, Paseo keeps the same hashed layout under that directory:
 }
 ```
 
+To give one project its own worktree root, set `worktree.root` in that project's `paseo.json`, or edit **Worktree root** in Project Settings:
+
+```json
+{
+  "worktree": {
+    "root": "/mnt/fast/my-app-worktrees"
+  }
+}
+```
+
+A project root does not use the hash and slug layout. Paseo uses the branch name as the relative path, including its `/` segments:
+
+```text
+branch feat/oauth-callback
+→ /mnt/fast/my-app-worktrees/feat/oauth-callback
+```
+
+Relative project roots are resolved from the main checkout that contains `paseo.json`. `~` resolves to the daemon user's home directory. Existing worktrees stay at their recorded paths when you change the setting.
+
 1. Create a workspace with worktree isolation, Paseo creates the worktree and runs your setup hooks
 2. Launch one or more agents in that workspace
 3. Review the diff against the base branch
 4. Merge or archive the workspace; after the last workspace using it is archived, Paseo runs teardown and removes the worktree
 
 ## Create a worktree-backed workspace
+
+In the app, choose **New worktree** and enter a branch name to create it from the selected starting ref. Leave the branch name empty to let Paseo generate it from the first prompt.
 
 The examples below use the current directory as the source checkout. Pass `--path ~/dev/my-app` to create the workspace from another checkout.
 
@@ -80,11 +101,12 @@ Add `--forge <name>` when Paseo cannot infer the forge from the source checkout.
 
 ## paseo.json
 
-Drop a `paseo.json` in your repo root. Paseo reads it from the committed version of the base branch you picked, so uncommitted changes in other branches don't apply.
+Drop a `paseo.json` in your project directory. Paseo reads `worktree.root` from the main checkout before creating the new worktree. Lifecycle hooks and scripts then come from the config present in the new worktree.
 
 ```json
 {
   "worktree": {
+    "root": "/mnt/fast/my-app-worktrees",
     "setup": "npm ci",
     "teardown": "rm -rf .cache"
   },

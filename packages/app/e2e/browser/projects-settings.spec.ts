@@ -238,6 +238,22 @@ test.describe("Projects settings", () => {
     await expectNoUncommittedSetupWarning(page);
   });
 
+  test("user configures the per-project worktree root", async ({ page, editableProject }) => {
+    await openProjects(page);
+    await openProjectSettings(page, editableProject.name);
+
+    const rootInput = page.getByTestId("worktree-root-input");
+    await expect(rootInput).toBeVisible({ timeout: 30_000 });
+    await rootInput.fill("../project-worktrees");
+    await clickSaveProjectSettings(page);
+
+    await expect
+      .poll(async () => JSON.parse(await readProjectConfigFile(editableProject)).worktree?.root, {
+        timeout: 30_000,
+      })
+      .toBe("../project-worktrees");
+  });
+
   test("project navigation stays inside the selected host", async ({ page, editableProject }) => {
     await openProjects(page);
     await openProjectSettings(page, editableProject.name);

@@ -7235,6 +7235,10 @@ export class Session {
           this.workspaceAutoName.scheduleForWorktree(autoNameInput, {
             currentSelection: this.getFocusedAgentSelectionForCwd(autoNameInput.workspace.cwd),
           }),
+        prepareWorktreeNameForFirstAgent: (autoNameInput) =>
+          this.workspaceAutoName.generateForWorktreeCreation(autoNameInput, {
+            currentSelection: this.getFocusedAgentSelectionForCwd(autoNameInput.cwd),
+          }),
         startWorkspaceSetup: (workspaceId, operation) =>
           this.workspaceSetupRuntime.start(workspaceId, operation),
         assertWorkspaceAutomationAllowed: (workspaceId) =>

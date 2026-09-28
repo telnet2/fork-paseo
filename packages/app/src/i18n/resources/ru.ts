@@ -1278,7 +1278,20 @@ export const ru: TranslationResources = {
     isolation: {
       local: "Локально",
       worktree: "Новый worktree",
+      resume: "Продолжить рабочую область",
       label: "Изоляция",
+    },
+    resume: {
+      directory: "Каталог рабочей области",
+      chooseDirectory: "Выбрать каталог",
+      searchPlaceholder: "Найти или ввести путь к каталогу",
+      searching: "Поиск каталогов...",
+      noDirectories: "Подходящие каталоги не найдены.",
+      tooltip: "Открыть существующий каталог на этом хосте",
+    },
+    worktree: {
+      branchName: "Имя ветки",
+      branchNamePlaceholder: "Имя ветки (автоматически, если оставить пустым)",
     },
     fields: {
       project: "Проект",
@@ -2728,6 +2741,9 @@ export const ru: TranslationResources = {
         failedDescription: "Загрузите данные заново, чтобы повторить попытку.",
       },
       worktree: {
+        root: "Корень worktree",
+        rootAccessibility: "Корневой каталог worktree",
+        rootPlaceholder: "По умолчанию: каталог данных Paseo",
         title: "Хуки жизненного цикла worktree",
         info: "Команды, которые выполняются при создании или удалении worktree для этого проекта.",
         docs: "Документация",

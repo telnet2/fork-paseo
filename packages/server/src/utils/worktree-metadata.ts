@@ -14,6 +14,7 @@ const ChangeRequestLookupTargetSchema = z.object({
 // existed only have the name — there are no migrations, so readers fall back.
 const PaseoWorktreeMetadataV1Schema = z.object({
   version: z.literal(1),
+  projectWorktreesRoot: z.string().min(1).optional(),
   baseRefName: z.string().min(1),
   baseRef: z.string().min(1).optional(),
   changeRequestLookupTarget: ChangeRequestLookupTargetSchema.optional(),
@@ -21,6 +22,7 @@ const PaseoWorktreeMetadataV1Schema = z.object({
 
 const PaseoWorktreeMetadataV2Schema = z.object({
   version: z.literal(2),
+  projectWorktreesRoot: z.string().min(1).optional(),
   baseRefName: z.string().min(1),
   baseRef: z.string().min(1).optional(),
   changeRequestLookupTarget: ChangeRequestLookupTargetSchema.optional(),
@@ -216,6 +218,7 @@ function assertValidBaseRef(value: string): void {
 export function writePaseoWorktreeMetadata(
   worktreeRoot: string,
   options: {
+    projectWorktreesRoot?: string;
     baseRefName: string;
     baseRef?: string;
     changeRequestLookupTarget?: PaseoWorktreeChangeRequestHint;
@@ -230,6 +233,7 @@ export function writePaseoWorktreeMetadata(
 
   const metadata: PaseoWorktreeMetadata = {
     version: 1,
+    ...(options.projectWorktreesRoot ? { projectWorktreesRoot: options.projectWorktreesRoot } : {}),
     baseRefName,
     ...(baseRef ? { baseRef } : {}),
     ...(options.changeRequestLookupTarget

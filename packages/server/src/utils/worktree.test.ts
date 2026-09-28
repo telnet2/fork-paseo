@@ -3,6 +3,7 @@ import {
   createWorktree as createWorktreePrimitive,
   deriveWorktreeProjectHash,
   deletePaseoWorktree,
+  getProjectWorktreesRoot,
   isPaseoOwnedWorktreeCwd,
   mapWorkspaceCwdToWorktree,
   slugify,
@@ -91,6 +92,57 @@ describe("paseo worktree manager", () => {
 
   afterEach(() => {
     rmSync(tempDir, { recursive: true, force: true });
+  });
+
+  it("uses the project root and preserves the branch path", async () => {
+    const root = join(tempDir, "project-worktrees");
+    writeFileSync(join(repoDir, "paseo.json"), JSON.stringify({ worktree: { root } }));
+
+    const created = await createWorktreePrimitive({
+      cwd: repoDir,
+      worktreeSlug: "tidy-fox",
+      source: { kind: "branch-off", branchName: "feat/XXX", baseBranch: "main" },
+      runSetup: false,
+      paseoHome,
+    });
+
+    expect(created.worktreePath).toBe(join(root, "feat", "XXX"));
+    expect(
+      execFileSync("git", ["branch", "--show-current"], {
+        cwd: created.worktreePath,
+        encoding: "utf8",
+      }).trim(),
+    ).toBe("feat/XXX");
+    await expect(
+      isPaseoOwnedWorktreeCwd(created.worktreePath, { paseoHome }),
+    ).resolves.toMatchObject({
+      allowed: true,
+      worktreePath: created.worktreePath,
+      worktreeRoot: root,
+    });
+    await deletePaseoWorktree({ cwd: repoDir, worktreePath: created.worktreePath, paseoHome });
+    expect(existsSync(created.worktreePath)).toBe(false);
+  });
+
+  it("resolves a nested project's relative root from its main checkout", async () => {
+    const projectDirectory = join(repoDir, "packages", "app");
+    const linkedWorktree = join(tempDir, "linked-worktree");
+    mkdirSync(projectDirectory, { recursive: true });
+    writeFileSync(
+      join(projectDirectory, "paseo.json"),
+      JSON.stringify({ worktree: { root: "../project-worktrees" } }),
+    );
+    execFileSync("git", ["add", "."], { cwd: repoDir });
+    execFileSync("git", ["-c", "commit.gpgsign=false", "commit", "-m", "project config"], {
+      cwd: repoDir,
+    });
+    execFileSync("git", ["worktree", "add", "-b", "linked", linkedWorktree, "main"], {
+      cwd: repoDir,
+    });
+
+    await expect(getProjectWorktreesRoot(join(linkedWorktree, "packages", "app"))).resolves.toBe(
+      join(repoDir, "packages", "project-worktrees"),
+    );
   });
 
   it("treats a worktree as paseo-owned even when its .git admin is missing", async () => {

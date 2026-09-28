@@ -1249,7 +1249,20 @@ export const zhCN: TranslationResources = {
     isolation: {
       local: "本地",
       worktree: "新建 worktree",
+      resume: "恢复 workspace",
       label: "隔离",
+    },
+    resume: {
+      directory: "Workspace 目录",
+      chooseDirectory: "选择目录",
+      searchPlaceholder: "搜索或输入目录路径",
+      searching: "正在搜索目录...",
+      noDirectories: "没有匹配的目录。",
+      tooltip: "打开此主机上的现有目录",
+    },
+    worktree: {
+      branchName: "分支名称",
+      branchNamePlaceholder: "分支名称（留空则自动生成）",
     },
     fields: {
       project: "项目",
@@ -2644,6 +2657,9 @@ export const zhCN: TranslationResources = {
         failedDescription: "重新加载以重试。",
       },
       worktree: {
+        root: "Worktree 根目录",
+        rootAccessibility: "Worktree 根目录",
+        rootPlaceholder: "默认：Paseo 数据目录",
         title: "Worktree 生命周期 hooks",
         info: "为此 Project 创建或清理 worktree 时运行的命令",
         docs: "文档",

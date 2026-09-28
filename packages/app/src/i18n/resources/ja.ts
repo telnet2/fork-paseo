@@ -1274,7 +1274,20 @@ export const ja: TranslationResources = {
     isolation: {
       local: "ローカル",
       worktree: "新しいワークツリー",
+      resume: "ワークスペースを再開",
       label: "分離方法",
+    },
+    resume: {
+      directory: "ワークスペースディレクトリ",
+      chooseDirectory: "ディレクトリを選択",
+      searchPlaceholder: "ディレクトリを検索またはパスを入力",
+      searching: "ディレクトリを検索中...",
+      noDirectories: "一致するディレクトリがありません。",
+      tooltip: "このホスト上の既存ディレクトリを開く",
+    },
+    worktree: {
+      branchName: "ブランチ名",
+      branchNamePlaceholder: "ブランチ名（空欄の場合は自動生成）",
     },
     fields: {
       project: "プロジェクト",
@@ -2705,6 +2718,9 @@ export const ja: TranslationResources = {
         failedDescription: "再読み込みして再試行してください。",
       },
       worktree: {
+        root: "ワークツリールート",
+        rootAccessibility: "ワークツリールートディレクトリ",
+        rootPlaceholder: "デフォルト：Paseo データディレクトリ",
         title: "ワークツリーライフサイクルフック",
         info: "このプロジェクトのワークツリーが作成または削除されたときに実行されるコマンド",
         docs: "ドキュメント",

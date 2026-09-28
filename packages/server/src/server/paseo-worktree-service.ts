@@ -75,7 +75,7 @@ async function createPaseoWorktreeWithPriority(
   const workspaceCwdPlan = await planWorkspaceCwdForWorktree(input.cwd, deps.workspaceGitService);
   const createdWorktree = await createWorktreeCore(input, deps);
   try {
-    maybeMarkFirstAgentBranchAutoNameEligible({ createdWorktree });
+    maybeMarkFirstAgentBranchAutoNameEligible({ createdWorktree, input });
     const workspaceCwd = mapWorkspaceRelativeCwdToWorktree({
       relativeWorkspaceCwd: workspaceCwdPlan.relativeWorkspaceCwd,
       targetWorktreePath: createdWorktree.worktree.worktreePath,
@@ -238,10 +238,10 @@ export async function attemptFirstAgentBranchAutoName(options: {
 
 const MAX_BRANCH_NAME_SUFFIX_ATTEMPTS = 50;
 
-async function findAvailableBranchName(options: {
+export async function findAvailableBranchName(options: {
   cwd: string;
   desiredName: string;
-  placeholderBranchName: string;
+  placeholderBranchName?: string;
   localBranchExists: (cwd: string, branchName: string) => Promise<boolean>;
 }): Promise<string | null> {
   const { cwd, desiredName, placeholderBranchName } = options;
@@ -262,11 +262,19 @@ async function findAvailableBranchName(options: {
 
 function maybeMarkFirstAgentBranchAutoNameEligible(options: {
   createdWorktree: Awaited<ReturnType<typeof createWorktreeCore>>;
+  input: CreatePaseoWorktreeInput;
 }): void {
   const { createdWorktree } = options;
-  if (!createdWorktree.created || createdWorktree.intent.kind !== "branch-off") {
+  if (
+    !createdWorktree.created ||
+    createdWorktree.intent.kind !== "branch-off" ||
+    options.input.branchName?.trim()
+  ) {
     return;
   }
+
+  const metadata = readPaseoWorktreeMetadata(createdWorktree.worktree.worktreePath);
+  if (metadata?.projectWorktreesRoot) return;
 
   writePaseoWorktreeFirstAgentBranchAutoNameMetadata(createdWorktree.worktree.worktreePath, {
     placeholderBranchName: createdWorktree.worktree.branchName,

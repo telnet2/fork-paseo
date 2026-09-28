@@ -1296,7 +1296,20 @@ export const es: TranslationResources = {
     isolation: {
       local: "Local",
       worktree: "Nuevo worktree",
+      resume: "Reanudar espacio de trabajo",
       label: "Aislamiento",
+    },
+    resume: {
+      directory: "Directorio del espacio de trabajo",
+      chooseDirectory: "Elegir un directorio",
+      searchPlaceholder: "Buscar o introducir una ruta",
+      searching: "Buscando directorios...",
+      noDirectories: "No hay directorios coincidentes.",
+      tooltip: "Abrir un directorio existente en este host",
+    },
+    worktree: {
+      branchName: "Nombre de la rama",
+      branchNamePlaceholder: "Nombre de la rama (automático si se deja vacío)",
     },
     fields: {
       project: "Proyecto",
@@ -2736,6 +2749,9 @@ export const es: TranslationResources = {
         failedDescription: "Vuelva a cargar para intentarlo de nuevo.",
       },
       worktree: {
+        root: "Raíz de worktrees",
+        rootAccessibility: "Directorio raíz de worktrees",
+        rootPlaceholder: "Predeterminado: directorio de datos de Paseo",
         title: "Ganchos del ciclo de vida del árbol de trabajo",
         info: "Comandos que se ejecutan cuando se crea o elimina un árbol de trabajo para este proyecto",
         docs: "Documentos",

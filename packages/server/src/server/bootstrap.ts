@@ -1149,6 +1149,8 @@ export async function createPaseoDaemon(
         },
         autoNameWorkspaceBranchForFirstAgent: (autoNameInput) =>
           workspaceAutoName.scheduleForWorktree(autoNameInput),
+        prepareWorktreeNameForFirstAgent: (autoNameInput) =>
+          workspaceAutoName.generateForWorktreeCreation(autoNameInput),
         emitWorkspaceUpdateForWorkspaceId: async (workspaceId) => {
           await emitWorkspaceUpdatesExternal([workspaceId]);
         },

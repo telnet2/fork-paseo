@@ -21,6 +21,7 @@ export interface ProjectScriptDraft {
 }
 
 export interface ProjectConfigDraft {
+  worktreeRootText: string;
   setupText: string;
   setupOriginalKind: LifecycleOriginalKind;
   teardownText: string;
@@ -136,6 +137,7 @@ export function configToDraft(config: PaseoConfigRaw | null | undefined): Projec
   }
 
   return {
+    worktreeRootText: typeof worktree.root === "string" ? worktree.root : "",
     setupText: setup.text,
     setupOriginalKind: setup.kind,
     teardownText: teardown.text,
@@ -156,6 +158,12 @@ export function applyDraftToConfig(input: ApplyDraftInput): PaseoConfigRaw {
   const baseWorktree = baseConfig.worktree ?? {};
 
   const nextWorktree: Record<string, unknown> = { ...baseWorktree };
+  const nextWorktreeRoot = input.draft.worktreeRootText.trim();
+  if (nextWorktreeRoot.length === 0) {
+    delete nextWorktree.root;
+  } else {
+    nextWorktree.root = nextWorktreeRoot;
+  }
   const nextSetup = lifecycleFromText(input.draft.setupText, input.draft.setupOriginalKind);
   if (nextSetup === undefined) {
     delete nextWorktree.setup;

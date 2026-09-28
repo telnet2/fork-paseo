@@ -1286,7 +1286,20 @@ export const ptBR: TranslationResources = {
     isolation: {
       local: "Local",
       worktree: "Novo worktree",
+      resume: "Retomar workspace",
       label: "Isolamento",
+    },
+    resume: {
+      directory: "Diretório do workspace",
+      chooseDirectory: "Escolher um diretório",
+      searchPlaceholder: "Pesquisar ou inserir um caminho",
+      searching: "Pesquisando diretórios...",
+      noDirectories: "Nenhum diretório correspondente.",
+      tooltip: "Abrir um diretório existente neste host",
+    },
+    worktree: {
+      branchName: "Nome da branch",
+      branchNamePlaceholder: "Nome da branch (automático se ficar vazio)",
     },
     fields: {
       project: "Projeto",
@@ -2719,6 +2732,9 @@ export const ptBR: TranslationResources = {
         failedDescription: "Recarregue para tentar novamente.",
       },
       worktree: {
+        root: "Raiz dos worktrees",
+        rootAccessibility: "Diretório raiz dos worktrees",
+        rootPlaceholder: "Padrão: diretório de dados do Paseo",
         title: "Hooks de ciclo de vida do worktree",
         info: "Comandos executados quando um worktree é criado ou desmontado para este projeto",
         docs: "Docs",

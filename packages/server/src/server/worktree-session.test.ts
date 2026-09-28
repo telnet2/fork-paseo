@@ -454,6 +454,72 @@ describe("resolveGitCreateBaseBranch", () => {
 });
 
 describe("create-agent worktree setup boundary", () => {
+  test("generates the branch before creating a custom-root worktree", async () => {
+    const { tempDir, repoDir } = createGitRepo();
+    const paseoHome = path.join(tempDir, ".paseo");
+    const projectWorktreesRoot = path.join(tempDir, "project-worktrees");
+    const projectDirectory = path.join(repoDir, "packages", "app");
+    const prepareWorktreeNameForFirstAgent = vi.fn(async () => ({
+      title: "Add OAuth callback",
+      branch: "feat/oauth-callback",
+    }));
+    const autoNameWorkspaceBranchForFirstAgent = vi.fn();
+    mkdirSync(projectDirectory, { recursive: true });
+    writeFileSync(
+      path.join(projectDirectory, "paseo.json"),
+      JSON.stringify({ worktree: { root: projectWorktreesRoot } }),
+    );
+    execFileSync("git", ["add", "."], { cwd: repoDir, stdio: "pipe" });
+    execFileSync("git", ["-c", "commit.gpgsign=false", "commit", "-m", "project config"], {
+      cwd: repoDir,
+      stdio: "pipe",
+    });
+
+    try {
+      const result = await createPaseoWorktreeWorkflow(
+        {
+          paseoHome,
+          createPaseoWorktree: createPaseoWorktreeForTest({ paseoHome }),
+          warmWorkspaceGitData: async () => {},
+          autoNameWorkspaceBranchForFirstAgent,
+          prepareWorktreeNameForFirstAgent,
+          emitWorkspaceUpdateForWorkspaceId: async () => {},
+          cacheWorkspaceSetupSnapshot: () => {},
+          emit: () => {},
+          sessionLogger: createLogger(),
+          terminalManager: null,
+          archiveWorkspaceRecord: async () => {},
+          serviceProxy: null,
+          scriptRuntimeStore: null,
+          getDaemonTcpPort: null,
+          getDaemonTcpHost: null,
+          onScriptsChanged: null,
+        },
+        {
+          cwd: projectDirectory,
+          worktreeSlug: "dazzling-yak",
+          firstAgentContext: { prompt: "Add an OAuth callback" },
+          runSetup: false,
+          paseoHome,
+        },
+      );
+
+      expect(prepareWorktreeNameForFirstAgent).toHaveBeenCalledOnce();
+      expect(result.worktree.branchName).toBe("feat/oauth-callback");
+      expect(result.worktree.worktreePath).toBe(
+        path.join(projectWorktreesRoot, "feat", "oauth-callback"),
+      );
+      expect(result.workspace.cwd).toBe(
+        path.join(projectWorktreesRoot, "feat", "oauth-callback", "packages", "app"),
+      );
+      expect(result.workspace.title).toBe("Add OAuth callback");
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      expect(autoNameWorkspaceBranchForFirstAgent).not.toHaveBeenCalled();
+    } finally {
+      rmSync(tempDir, { recursive: true, force: true });
+    }
+  });
+
   test("blocked worktrees keep their workspace but skip setup and automatic terminals", async () => {
     const { tempDir, repoDir } = createGitRepo();
     const paseoHome = path.join(tempDir, ".paseo");

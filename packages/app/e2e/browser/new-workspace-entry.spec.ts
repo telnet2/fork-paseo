@@ -246,7 +246,7 @@ test.describe("New workspace entry points", () => {
     }
   });
 
-  test("the Isolation control is hidden for a non-git project and shown for a git project", async ({
+  test("the mode picker offers Resume for non-git projects and New worktree for git projects", async ({
     page,
   }) => {
     const gitProject: SeededWorkspace = await seedWorkspace({ repoPrefix: "entry-iso-git-" });
@@ -274,9 +274,13 @@ test.describe("New workspace entry points", () => {
       await nonGitOption.click();
       await expectNewWorkspaceProjectSelected(page, nonGitProject.projectDisplayName);
 
-      // No git checkout means no worktree isolation choice: the Isolation row is
-      // absent entirely.
-      await expect(page.getByTestId("workspace-create-isolation-trigger")).toHaveCount(0);
+      // Any directory can be resumed, but a non-git project cannot create a worktree.
+      const isolationTrigger = page.getByTestId("workspace-create-isolation-trigger");
+      await expect(isolationTrigger).toBeVisible({ timeout: 30_000 });
+      await isolationTrigger.click();
+      await expect(page.getByTestId("workspace-create-isolation-resume")).toBeVisible();
+      await expect(page.getByTestId("workspace-create-isolation-worktree")).toHaveCount(0);
+      await page.keyboard.press("Escape");
 
       // Switching to the git project on the same screen reveals the Isolation row.
       await trigger.click();

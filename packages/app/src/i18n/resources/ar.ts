@@ -1260,7 +1260,20 @@ export const ar: TranslationResources = {
     isolation: {
       local: "محلي",
       worktree: "شجرة عمل جديدة",
+      resume: "استئناف مساحة العمل",
       label: "العزل",
+    },
+    resume: {
+      directory: "دليل مساحة العمل",
+      chooseDirectory: "اختر دليلاً",
+      searchPlaceholder: "ابحث أو أدخل مسار دليل",
+      searching: "جارٍ البحث في الأدلة...",
+      noDirectories: "لا توجد أدلة مطابقة.",
+      tooltip: "افتح دليلاً موجودًا على هذا المضيف",
+    },
+    worktree: {
+      branchName: "اسم الفرع",
+      branchNamePlaceholder: "اسم الفرع (تلقائي إذا تُرك فارغًا)",
     },
     fields: {
       project: "المشروع",
@@ -2677,6 +2690,9 @@ export const ar: TranslationResources = {
         failedDescription: "أعد التحميل للمحاولة مرة أخرى.",
       },
       worktree: {
+        root: "جذر شجرة العمل",
+        rootAccessibility: "دليل جذر شجرة العمل",
+        rootPlaceholder: "الافتراضي: دليل بيانات Paseo",
         title: "خطافات دورة حياة شجرة العمل",
         info: "الأوامر التي يتم تشغيلها عند إنشاء شجرة عمل أو هدمها لهذا المشروع",
         docs: "المستندات",

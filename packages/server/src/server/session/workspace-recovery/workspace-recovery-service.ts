@@ -183,7 +183,7 @@ export function createWorkspaceRecoveryService(deps: {
       const result = await createWorktree({
         cwd: sourceRepoRoot,
         worktreeSlug: basename(previousWorktreePath),
-        source,
+        source: { ...source, worktreePath: previousWorktreePath },
         runSetup: false,
         paseoHome: deps.paseoHome,
         worktreesRoot: deps.worktreesRoot,

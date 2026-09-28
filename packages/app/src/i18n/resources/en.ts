@@ -1268,7 +1268,20 @@ export const en = {
     isolation: {
       local: "Local",
       worktree: "New worktree",
+      resume: "Resume workspace",
       label: "Isolation",
+    },
+    resume: {
+      directory: "Workspace directory",
+      chooseDirectory: "Choose a directory",
+      searchPlaceholder: "Search or enter a directory path",
+      searching: "Searching directories...",
+      noDirectories: "No matching directories.",
+      tooltip: "Open an existing directory on this host",
+    },
+    worktree: {
+      branchName: "Branch name",
+      branchNamePlaceholder: "Branch name (automatic if empty)",
     },
     fields: {
       project: "Project",
@@ -2807,6 +2820,9 @@ export const en = {
       worktree: {
         title: "Worktree lifecycle hooks",
         info: "Commands that run when a worktree is created or torn down for this project",
+        root: "Worktree root",
+        rootAccessibility: "Worktree root directory",
+        rootPlaceholder: "Default: Paseo data directory",
         docs: "Docs",
         docsTooltip:
           "See docs for more details and the environment variables available to these commands",
