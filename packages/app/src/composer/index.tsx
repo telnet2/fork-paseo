@@ -73,6 +73,7 @@ import {
   selectAgentTurnPresentation,
   useSessionStore,
 } from "@/stores/session-store";
+import { selectWorkspace } from "@/stores/session-store-hooks/selectors";
 import { useFilePicker } from "@/hooks/use-file-picker";
 import { useFileDrop } from "@/components/file-drop/use-file-drop";
 import type { DroppedItem } from "@/components/file-drop/types";
@@ -188,6 +189,8 @@ import {
   resolveWorkspaceFileDrop,
   type WorkspaceFileDragPayload,
 } from "@/attachments/workspace-file-drag";
+import { ComposerWorkspaceLabelPicker } from "@/composer/workspace-label-picker";
+import type { WorkspaceLabelTarget } from "@/workspace-labels/picker";
 
 const composerImageAttachmentPersister: Pick<
   AttachmentPersister,
@@ -1341,6 +1344,23 @@ function ComposerContentImpl({
   const supportsForgeSearch = useSessionStore(
     (state) => state.sessions[serverId]?.serverInfo?.features?.forgeSearch === true,
   );
+  const supportsWorkspaceLabels = useSessionStore(
+    (state) => state.sessions[serverId]?.serverInfo?.features?.workspaceLabels === true,
+  );
+  const assignedWorkspaceLabels = useSessionStore(
+    (state) => selectWorkspace(state, serverId, workspaceId ?? null)?.labels,
+  );
+  const workspaceLabelTarget = useMemo<WorkspaceLabelTarget | null>(
+    () =>
+      supportsWorkspaceLabels && workspaceId
+        ? {
+            serverId,
+            workspaceId,
+            labels: assignedWorkspaceLabels ?? [],
+          }
+        : null,
+    [assignedWorkspaceLabels, serverId, supportsWorkspaceLabels, workspaceId],
+  );
   const forgeAutoAttachRef = useRef<ReturnType<typeof useComposerForgeAutoAttach>>(null);
   const [isForgeResolving, setIsForgeResolving] = useState(false);
   const forgeConfiguration = useMemo(
@@ -2268,9 +2288,13 @@ function ComposerContentImpl({
       isCompactLayout,
       showAgentControls: mode.showAgentControls,
     });
-    return controls ? (
-      <ComposerInputProvider value={composerInput}>{controls}</ComposerInputProvider>
-    ) : null;
+    if (!controls && !workspaceLabelTarget) return null;
+    return (
+      <ComposerInputProvider value={composerInput}>
+        {workspaceLabelTarget ? <ComposerWorkspaceLabelPicker target={workspaceLabelTarget} /> : null}
+        {controls}
+      </ComposerInputProvider>
+    );
   }, [
     agentControls,
     agentId,
@@ -2279,6 +2303,7 @@ function ComposerContentImpl({
     isCompactLayout,
     mode.showAgentControls,
     serverId,
+    workspaceLabelTarget,
   ]);
 
   const handleAttachButtonRef = useCallback((node: View | null) => {

@@ -107,7 +107,7 @@ export function useWorkspaceLabelMenuPages(
  * dismissed. Assignment is the trailing check `MenuItem` already draws for a chosen row, and the
  * colour goes in the leading slot, which puts both on the rails every other row in the menu uses.
  */
-function WorkspaceLabelPickerPage({
+export function WorkspaceLabelPickerPage({
   serverId,
   workspaceId,
   assignedLabels,

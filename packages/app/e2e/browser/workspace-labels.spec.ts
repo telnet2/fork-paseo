@@ -4,6 +4,7 @@ import { getServerId } from "../support/helpers/server-id";
 import { seedWorkspace } from "../support/helpers/seed-client";
 import { waitForSidebarHydration } from "../support/helpers/workspace-ui";
 import { daemonWsRoutePattern } from "../support/helpers/daemon-port";
+import { clickNewChat, gotoWorkspace } from "../support/helpers/launcher";
 
 interface SessionEnvelope {
   type?: string;
@@ -13,7 +14,7 @@ interface SessionEnvelope {
 async function readWorkspaceLabels(seeded: Awaited<ReturnType<typeof seedWorkspace>>) {
   const workspaces = await seeded.client.fetchWorkspaces();
   for (const workspace of workspaces.entries) {
-    if (workspace.id === seeded.workspaceId) return workspace.labels?.slice().sort();
+    if (workspace.id === seeded.workspaceId) return workspace.labels?.slice().sort() ?? [];
   }
   return undefined;
 }
@@ -143,6 +144,41 @@ async function createLabel(
 
 test.describe("Workspace labels", () => {
   test.describe.configure({ timeout: 180_000 });
+
+  test("assigns and removes labels from the workspace composer", async ({ page }) => {
+    const seeded = await seedWorkspace({ repoPrefix: "workspace-labels-composer-" });
+    try {
+      await seeded.client.setWorkspaceLabel({
+        workspaceId: seeded.workspaceId,
+        label: { name: "Composer", color: "red" },
+        assigned: true,
+      });
+      await seeded.client.setWorkspaceLabel({
+        workspaceId: seeded.workspaceId,
+        label: { name: "Composer", color: "red" },
+        assigned: false,
+      });
+      await gotoWorkspace(page, seeded.workspaceId);
+      await clickNewChat(page);
+
+      const trigger = page.getByTestId("composer-workspace-labels").filter({ visible: true });
+      await expect(trigger).toBeVisible({ timeout: 30_000 });
+      await trigger.click();
+      await expect(page.getByTestId("composer-workspace-label-menu")).toBeVisible();
+      await expectAssigned(page, "Composer", false);
+
+      await labelRow(page, "Composer").click();
+      await expectAssigned(page, "Composer", true);
+      await expect(page.getByTestId("workspace-label-picker-create")).toBeVisible();
+      await expect.poll(readWorkspaceLabels.bind(null, seeded)).toEqual(["Composer"]);
+
+      await labelRow(page, "Composer").click();
+      await expectAssigned(page, "Composer", false);
+      await expect.poll(readWorkspaceLabels.bind(null, seeded)).toEqual([]);
+    } finally {
+      await seeded.cleanup();
+    }
+  });
 
   test("keeps label filters reachable when no workspaces match", async ({ page }) => {
     const seeded = await seedWorkspace({ repoPrefix: "workspace-labels-no-matches-" });
