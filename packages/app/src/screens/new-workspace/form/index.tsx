@@ -1,4 +1,8 @@
-import { useCallback, useMemo, type ReactElement, type ReactNode, type RefObject } from "react";
+import type { WorkspaceStartMode } from "../setup-model";
+import type { ResumeDirectoryPicker } from "@/fork/workspaces/resume-directory";
+import { FormTextInput } from "@/components/ui/form-field";
+import type { EditingTextInputHandle } from "@/components/ui/text-input";
+import { useCallback, useLayoutEffect, useMemo, useRef, type ReactElement, type ReactNode, type RefObject } from "react";
 import { View } from "react-native";
 import { useTranslation } from "react-i18next";
 import { StyleSheet } from "react-native-unistyles";
@@ -20,7 +24,7 @@ import { branchIcon, folderIcon, ProjectIcon, pullRequestIcon } from "./icons";
 import { LaunchControl } from "./launch-control";
 import { AddProjectOption, IsolationOption, ProjectOption, RefOption } from "./options";
 
-type Isolation = "local" | "worktree";
+type Isolation = WorkspaceStartMode;
 type RenderOption = NonNullable<ComboboxProps["renderOption"]>;
 
 interface PickerControl {
@@ -57,6 +61,7 @@ export interface NewWorkspaceFormProps {
   isolation: PickerControl & {
     effectiveIsolation: Isolation;
     canCreateWorktree: boolean;
+    canResumeWorkspace: boolean;
     onSelect: (isolation: Isolation) => void;
   };
   base: PickerControl & {
@@ -71,6 +76,8 @@ export interface NewWorkspaceFormProps {
     emptyText: string;
     showRefPicker: boolean;
   };
+  resume: ResumeDirectoryPicker;
+  branch: { value: string; onChange: (value: string) => void; visible: boolean };
   launch: {
     serverId: string;
     target: LaunchTarget;
@@ -130,17 +137,18 @@ function useIsolationPicker(
   isPending: boolean,
 ): { options: ComboboxOption[]; onSelect: (id: string) => void; renderOption: RenderOption } {
   const { t } = useTranslation();
-  const { canCreateWorktree, onSelect, onOpenChange } = isolation;
+  const { canCreateWorktree, canResumeWorkspace, onSelect, onOpenChange } = isolation;
   // "New worktree" is omitted entirely (not disabled) when the project isn't a
   // git checkout, since worktree isolation is impossible there.
   const options = useMemo<ComboboxOption[]>(() => {
-    const local = { id: "local", label: t("newWorkspace.isolation.local") };
-    if (!canCreateWorktree) return [local];
-    return [local, { id: "worktree", label: t("newWorkspace.isolation.worktree") }];
-  }, [canCreateWorktree, t]);
+    const choices = [{ id: "local", label: t("newWorkspace.isolation.local") }];
+    if (canCreateWorktree) choices.push({ id: "worktree", label: t("newWorkspace.isolation.worktree") });
+    if (canResumeWorkspace) choices.push({ id: "resume", label: t("newWorkspace.isolation.resume") });
+    return choices;
+  }, [canCreateWorktree, canResumeWorkspace, t]);
   const handleSelect = useCallback(
     (id: string) => {
-      onSelect(id === "worktree" ? "worktree" : "local");
+      if (id === "local" || id === "worktree" || id === "resume") onSelect(id);
       onOpenChange(false);
     },
     [onOpenChange, onSelect],
@@ -167,7 +175,13 @@ function useRefRenderOption(itemById: Map<string, PickerItem>, isPending: boolea
  */
 export function useNewWorkspaceForm(props: NewWorkspaceFormProps): ReactElement {
   const { t } = useTranslation();
-  const { isCompact, isPending, pluginItems, project, host, isolation, base, launch } = props;
+  const { isCompact, isPending, pluginItems, project, host, isolation, base, launch, resume, branch } = props;
+  const branchInputRef = useRef<EditingTextInputHandle | null>(null);
+  useLayoutEffect(() => {
+    if (branchInputRef.current && branchInputRef.current.getText() !== branch.value) {
+      branchInputRef.current.replaceText(branch.value);
+    }
+  }, [branch.value]);
   const variant: FieldTriggerVariant = isCompact ? "field" : "badge";
   const projectPicker = useProjectPicker(project, isPending);
   const isolationPicker = useIsolationPicker(isolation, isPending);
@@ -197,9 +211,8 @@ export function useNewWorkspaceForm(props: NewWorkspaceFormProps): ReactElement 
     [host.selectedServerId],
   );
   const isWorktree = isolation.effectiveIsolation === "worktree";
-  const isolationValue = isWorktree
-    ? t("newWorkspace.isolation.worktree")
-    : t("newWorkspace.isolation.local");
+  const isolationValue = t(`newWorkspace.isolation.${isolation.effectiveIsolation}`);
+  const isResume = isolation.effectiveIsolation === "resume";
   const refIcon = base.selectedItem?.kind === "github-pr" ? pullRequestIcon : branchIcon;
 
   const projectField = (
@@ -246,7 +259,7 @@ export function useNewWorkspaceForm(props: NewWorkspaceFormProps): ReactElement 
       />
     </HostPicker>
   );
-  const isolationField = isolation.canCreateWorktree ? (
+  const isolationField = isolation.canCreateWorktree || isolation.canResumeWorkspace ? (
     <FieldTrigger
       ref={isolation.anchorRef}
       variant={variant}
@@ -272,6 +285,33 @@ export function useNewWorkspaceForm(props: NewWorkspaceFormProps): ReactElement 
       onPress={base.open}
       disabled={isPending || !base.selectedSourceDirectory}
       testID="new-workspace-ref-picker-trigger"
+    />
+  ) : null;
+  const resumeField = isResume ? (
+    <FieldTrigger
+      ref={resume.anchorRef}
+      variant={variant}
+      label={t("newWorkspace.resume.directory")}
+      icon={folderIcon}
+      value={resume.selectedDirectory ?? t("newWorkspace.resume.chooseDirectory")}
+      onPress={resume.open}
+      disabled={isPending}
+      tooltip={t("newWorkspace.resume.tooltip")}
+      testID="new-workspace-resume-directory-trigger"
+    />
+  ) : null;
+  const branchField = branch.visible ? (
+    <FormTextInput
+      ref={branchInputRef}
+      size={isCompact ? "md" : "sm"}
+      initialValue={branch.value}
+      onChangeText={branch.onChange}
+      placeholder={t("newWorkspace.worktree.branchNamePlaceholder")}
+      accessibilityLabel={t("newWorkspace.worktree.branchName")}
+      testID="new-workspace-branch-name-input"
+      editable={!isPending}
+      autoCapitalize="none"
+      autoCorrect={false}
     />
   ) : null;
   const launchField = (
@@ -315,6 +355,20 @@ export function useNewWorkspaceForm(props: NewWorkspaceFormProps): ReactElement 
         renderOption={isolationPicker.renderOption}
       />
       <Combobox
+        options={resume.options}
+        value={resume.selectedDirectory ?? ""}
+        onSelect={resume.onSelect}
+        searchable
+        searchPlaceholder={t("newWorkspace.resume.searchPlaceholder")}
+        title={t("newWorkspace.resume.directory")}
+        open={resume.openState}
+        onOpenChange={resume.onOpenChange}
+        onSearchQueryChange={resume.setSearchQuery}
+        desktopPlacement="bottom-start"
+        anchorRef={resume.anchorRef}
+        emptyText={resume.emptyText}
+      />
+      <Combobox
         options={base.options}
         value={base.selectedOptionId}
         onSelect={base.onSelect}
@@ -338,7 +392,8 @@ export function useNewWorkspaceForm(props: NewWorkspaceFormProps): ReactElement 
         {projectField}
         {hostField}
         {isolationField}
-        {baseField}
+        {resumeField ?? baseField}
+        {branchField}
         {pluginItems}
         {launchField}
         {/* Isolation and Base come and go with the project; their rows stay reserved so the
@@ -355,7 +410,8 @@ export function useNewWorkspaceForm(props: NewWorkspaceFormProps): ReactElement 
       <View style={styles.desktopControl}>{projectField}</View>
       <View style={styles.desktopControl}>{hostField}</View>
       {isolationField ? <View style={styles.desktopControl}>{isolationField}</View> : null}
-      {baseField ? <View style={styles.desktopControl}>{baseField}</View> : null}
+      {resumeField ?? baseField ? <View style={styles.desktopControl}>{resumeField ?? baseField}</View> : null}
+      {branchField ? <View style={styles.desktopControl}>{branchField}</View> : null}
       {pluginItems}
       <View style={styles.launchSpacer} pointerEvents="none" />
       {launchField}

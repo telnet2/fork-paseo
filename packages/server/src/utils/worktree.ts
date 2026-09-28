@@ -187,8 +187,8 @@ export interface WorktreeCheckoutRef {
 export type WorktreeSource =
   | { kind: "branch-off"; baseBranch: string; branchName: string }
   | { kind: "checkout-branch"; branchName: string }
-  | { kind: "restore"; branchName: string; baseRef: string | null }
-  | { kind: "restore-from-base"; baseRef: string; branchName: string }
+  | { kind: "restore"; branchName: string; baseRef: string | null; worktreePath?: string }
+  | { kind: "restore-from-base"; baseRef: string; branchName: string; worktreePath?: string }
   | {
       kind: "checkout-change-request";
       forge: string;
@@ -216,6 +216,7 @@ export type WorktreeSource =
 
 export interface CreateWorktreeOptions {
   cwd: string;
+  projectWorktreesRoot?: string | null;
   worktreeSlug: string;
   source: WorktreeSource;
   paseoHome?: string;
@@ -851,11 +852,48 @@ export function resolvePaseoWorktreesBaseRoot(options?: WorktreeRootOptions): st
   return join(home, "worktrees");
 }
 
+export async function getProjectWorktreesRoot(cwd: string): Promise<string | null> {
+  // Read the main checkout so copied config and relative paths in linked worktrees
+  // cannot move the project's root on the next creation.
+  const configDirectory = await resolveMainCheckoutDirectory(cwd);
+  try {
+    const result = await readPaseoConfig(configDirectory);
+    const root = result.ok ? result.config?.worktree?.root?.trim() : null;
+    return root ? resolve(configDirectory, expandTilde(root)) : null;
+  } catch {
+    // Invalid paseo.json is reported by the normal project-config/setup paths.
+    // It must not prevent a worktree from being created so setup can surface the
+    // existing configuration error with its established failure handling.
+    return null;
+  }
+}
+
+async function resolveMainCheckoutDirectory(cwd: string): Promise<string> {
+  const normalizedCwd = await normalizePathForOwnership(cwd);
+  try {
+    const commonDir = await getGitCommonDir(normalizedCwd);
+    const mainRepoRoot = await resolveRepoRootFromGitCommonDir(commonDir);
+    const { stdout } = await runGitCommand(["rev-parse", "--show-toplevel"], {
+      cwd: normalizedCwd,
+      envOverlay: READ_ONLY_GIT_ENV,
+    });
+    const worktreeRoot = parseGitRevParsePath(stdout);
+    const relativeDirectory = worktreeRoot
+      ? getRealpathAwareRelativePath(worktreeRoot, normalizedCwd)
+      : null;
+    return relativeDirectory === null ? normalizedCwd : resolve(mainRepoRoot, relativeDirectory);
+  } catch {
+    return normalizedCwd;
+  }
+}
+
 export async function getPaseoWorktreesRoot(
   cwd: string,
   paseoHome?: string,
   worktreesRoot?: string,
 ): Promise<string> {
+  const projectRoot = await getProjectWorktreesRoot(cwd);
+  if (projectRoot) return projectRoot;
   const baseRoot = resolvePaseoWorktreesBaseRoot({ paseoHome, worktreesRoot });
   const projectHash = await deriveWorktreeProjectHash(cwd);
   return join(baseRoot, projectHash);
@@ -1028,7 +1066,11 @@ async function resolveMetadataOwnedWorktree(
     });
     for (const entry of parseWorktreeList(listOutput)) {
       if ((await normalizePathForOwnership(entry.path)) === candidate) {
-        return { worktreePath: candidate, worktreeRoot: dirname(candidate) };
+        const metadata = await readPaseoWorktreeMetadata(candidate);
+        return {
+          worktreePath: candidate,
+          worktreeRoot: metadata?.projectWorktreesRoot ?? dirname(candidate),
+        };
       }
     }
     return null;
@@ -1363,6 +1405,7 @@ export async function resolveDefaultWorktreePath(
  */
 export const createWorktree = async ({
   cwd,
+  projectWorktreesRoot,
   source,
   worktreeSlug,
   paseoHome,
@@ -1375,16 +1418,18 @@ export const createWorktree = async ({
     source.kind === "checkout-github-pr"
       ? await listLocalBranchNames(cwd)
       : new Set<string>();
-  const sourcePlan = await resolveWorktreeSourcePlan({ cwd, source, desiredSlug: worktreeSlug });
+  const placement = await planWorktreePlacement({
+    cwd, projectWorktreesRoot, source, worktreeSlug, paseoHome, worktreesRoot,
+    worktreePath: explicitWorktreePath,
+  });
+  const { sourcePlan } = placement;
   const fetchedBranch = planCreatedLocalBranch(source, sourcePlan);
   const fetchedTip =
     fetchedBranch && !branchesBefore.has(fetchedBranch)
       ? await readLocalBranchTip(cwd, fetchedBranch)
       : null;
   try {
-    let worktreePath =
-      explicitWorktreePath ??
-      (await resolveDefaultWorktreePath({ cwd, paseoHome, worktreesRoot, worktreeSlug }));
+    let worktreePath = placement.finalWorktreePath;
     await mkdir(dirname(worktreePath), { recursive: true });
 
     // Primitive owner for `git worktree add`; callers route through createWorktreeCore.
@@ -1410,6 +1455,7 @@ export const createWorktree = async ({
     }
 
     await writePaseoWorktreeMetadata(worktreePath, {
+      ...(placement.ownershipRoot ? { projectWorktreesRoot: placement.ownershipRoot } : {}),
       baseRefName: sourcePlan.metadataBaseRefName,
       ...(sourcePlan.metadataBaseRef ? { baseRef: sourcePlan.metadataBaseRef } : {}),
       ...(sourcePlan.changeRequestLookupTarget
@@ -1435,6 +1481,72 @@ export const createWorktree = async ({
     throw error;
   }
 };
+
+async function planWorktreePlacement(options: CreateWorktreeOptions): Promise<{
+  sourcePlan: WorktreeSourcePlan;
+  finalWorktreePath: string;
+  ownershipRoot: string | null;
+}> {
+  const projectRoot =
+    options.projectWorktreesRoot === undefined
+      ? await getProjectWorktreesRoot(options.cwd)
+      : options.projectWorktreesRoot;
+  const desiredSlug =
+    projectRoot && options.source.kind === "branch-off"
+      ? options.source.branchName
+      : options.worktreeSlug;
+  const sourcePlan = await resolveWorktreeSourcePlan({
+    cwd: options.cwd,
+    source: options.source,
+    desiredSlug,
+  });
+  const source = options.source;
+  const isRestoring = source.kind === "restore" || source.kind === "restore-from-base";
+  const restorePath = options.worktreePath ?? (isRestoring ? source.worktreePath : undefined);
+  const root =
+    projectRoot ??
+    (await getPaseoWorktreesRoot(options.cwd, options.paseoHome, options.worktreesRoot));
+  const directoryName = projectRoot ? sourcePlan.branchName : options.worktreeSlug;
+  const requestedPath = restorePath ?? resolve(root, directoryName);
+  const exactPath = Boolean(projectRoot || restorePath);
+  if (exactPath && await pathExists(requestedPath)) {
+    throw new Error(`Worktree path already exists: ${requestedPath}`);
+  }
+  if (!restorePath) await assertWorktreePathInsideRoot(root, requestedPath);
+  await mkdir(dirname(requestedPath), { recursive: true });
+  let ownershipRoot: string | null = null;
+  if (exactPath) {
+    ownershipRoot = isPathInsideRoot(root, requestedPath) ? root : dirname(requestedPath);
+  }
+
+  return {
+    sourcePlan,
+    finalWorktreePath: exactPath ? requestedPath : await findAvailableWorktreePath(requestedPath),
+    ownershipRoot,
+  };
+}
+
+async function findAvailableWorktreePath(requestedPath: string): Promise<string> {
+  let candidate = requestedPath;
+  let suffix = 1;
+  while (await pathExists(candidate)) {
+    candidate = `${requestedPath}-${suffix}`;
+    suffix += 1;
+  }
+  return candidate;
+}
+
+async function assertWorktreePathInsideRoot(root: string, worktreePath: string): Promise<void> {
+  if (worktreePath === root || !isPathInsideRoot(root, worktreePath)) {
+    throw new Error(`Worktree path escapes its root: ${worktreePath}`);
+  }
+  await mkdir(root, { recursive: true });
+  let ancestor = worktreePath;
+  while (!await pathExists(ancestor)) ancestor = dirname(ancestor);
+  if (!isPathInsideRoot(await normalizePathForOwnership(root), await normalizePathForOwnership(ancestor))) {
+    throw new Error(`Worktree path escapes its root through a symlink: ${worktreePath}`);
+  }
+}
 
 interface ResolveWorktreeSourcePlanOptions {
   cwd: string;

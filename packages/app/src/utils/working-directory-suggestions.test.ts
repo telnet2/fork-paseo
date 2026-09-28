@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { buildWorkingDirectorySuggestions } from "./working-directory-suggestions";
+import {
+  buildWorkingDirectorySearchRequest,
+  buildWorkingDirectorySuggestions,
+  resolveWorkingDirectorySearchPaths,
+} from "./working-directory-suggestions";
 
 describe("buildWorkingDirectorySuggestions", () => {
   it("returns de-duplicated recommendations when query is empty", () => {
@@ -69,6 +73,38 @@ describe("buildWorkingDirectorySuggestions", () => {
       "/Users/me/projects/paseo",
       "/Users/me/documents",
       "/Users/me/projects",
+    ]);
+  });
+});
+
+describe("working directory search requests", () => {
+  it("keeps name searches scoped to the daemon home", () => {
+    expect(buildWorkingDirectorySearchRequest("paseo")).toEqual({ query: "paseo" });
+  });
+
+  it("searches the parent of an absolute POSIX path prefix", () => {
+    const request = buildWorkingDirectorySearchRequest("/data00/repos/pas");
+
+    expect(request).toEqual({ cwd: "/data00/repos", query: "pas" });
+    expect(resolveWorkingDirectorySearchPaths(request, ["paseo", "paseo-next"])).toEqual([
+      "/data00/repos/paseo",
+      "/data00/repos/paseo-next",
+    ]);
+  });
+
+  it("browses children when an absolute directory ends in a slash", () => {
+    const request = buildWorkingDirectorySearchRequest("/data00/repos/");
+
+    expect(request).toEqual({ cwd: "/data00/repos", query: "" });
+    expect(resolveWorkingDirectorySearchPaths(request, ["paseo"])).toEqual(["/data00/repos/paseo"]);
+  });
+
+  it("supports Windows drive paths while accepting slash-normalized results", () => {
+    const request = buildWorkingDirectorySearchRequest("C:\\Users\\me\\pro");
+
+    expect(request).toEqual({ cwd: "C:/Users/me", query: "pro" });
+    expect(resolveWorkingDirectorySearchPaths(request, ["projects/paseo"])).toEqual([
+      "C:/Users/me/projects/paseo",
     ]);
   });
 });

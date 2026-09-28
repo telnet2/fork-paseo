@@ -45,6 +45,7 @@ export const PaseoScriptEntryRawSchema = z
 
 export const PaseoWorktreeConfigRawSchema = z
   .object({
+    root: z.string().min(1).optional(),
     setup: PaseoLifecycleCommandRawSchema.optional(),
     teardown: PaseoLifecycleCommandRawSchema.optional(),
     terminals: z.unknown().optional(),

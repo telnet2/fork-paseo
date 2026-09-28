@@ -1414,7 +1414,20 @@ export const fr: TranslationResources = {
     isolation: {
       local: "Local",
       worktree: "Nouveau worktree",
+      resume: "Reprendre un espace de travail",
       label: "Isolation",
+    },
+    resume: {
+      directory: "Dossier de l’espace de travail",
+      chooseDirectory: "Choisir un dossier",
+      searchPlaceholder: "Rechercher ou saisir un chemin",
+      searching: "Recherche des dossiers...",
+      noDirectories: "Aucun dossier correspondant.",
+      tooltip: "Ouvrir un dossier existant sur cet hôte",
+    },
+    worktree: {
+      branchName: "Nom de la branche",
+      branchNamePlaceholder: "Nom de la branche (automatique si vide)",
     },
     fields: {
       project: "Projet",
@@ -3168,6 +3181,9 @@ export const fr: TranslationResources = {
         failedDescription: "Rechargez pour réessayer.",
       },
       worktree: {
+        root: "Racine des worktrees",
+        rootAccessibility: "Dossier racine des worktrees",
+        rootPlaceholder: "Par défaut : dossier de données Paseo",
         title: "Hooks de cycle de vie des worktrees",
         info: "Commandes exécutées à la création ou à la suppression d’un worktree de ce projet",
         docs: "Documentation",

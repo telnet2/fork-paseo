@@ -1,4 +1,4 @@
-import { resolve } from "node:path";
+import { dirname, resolve } from "node:path";
 
 import type { Logger } from "pino";
 
@@ -348,7 +348,7 @@ async function resolveWorkspaceBackingDirectory(
       expectsPaseoOwnership: true,
       registryProven: true,
       mainRepoRoot: workspace.mainRepoRoot,
-      paseoWorktreesRoot: null,
+      paseoWorktreesRoot: dirname(workspace.worktreeRoot),
     };
   }
   if (workspace.kind !== "worktree") {

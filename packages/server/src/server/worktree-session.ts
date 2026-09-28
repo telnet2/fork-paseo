@@ -21,6 +21,7 @@ import type { ServiceProxySubsystem } from "./service-proxy.js";
 import type { WorkspaceScriptRuntimeStore } from "./workspace-script-runtime-store.js";
 import {
   getWorktreeSetupCommands,
+  getProjectWorktreesRoot,
   resolveWorktreeRuntimeEnv,
   runWorktreeSetupCommands,
   type WorktreeConfig,
@@ -77,6 +78,10 @@ interface CreatePaseoWorktreeWorkflowDependencies extends CreatePaseoWorktreeInB
     workspace: PersistedWorkspaceRecord;
     firstAgentContext: FirstAgentContext;
   }) => void;
+  prepareWorktreeNameForFirstAgent?: (input: {
+    cwd: string;
+    firstAgentContext: FirstAgentContext;
+  }) => Promise<{ title: string | null; branch: string | null } | null>;
   startWorkspaceSetup?: (workspaceId: string, operation: WorkspaceSetupOperation) => void;
   assertWorkspaceAutomationAllowed?: (workspaceId: string) => Promise<void>;
 }
@@ -338,6 +343,39 @@ export async function handleCreatePaseoWorktreeRequest(
   }
 }
 
+async function prepareWorktreeCreationInput(
+  dependencies: CreatePaseoWorktreeWorkflowDependencies,
+  input: CreatePaseoWorktreeInput,
+): Promise<{ input: CreatePaseoWorktreeInput; preparedFirstAgentName: boolean }> {
+  if (
+    input.action === "checkout" ||
+    input.checkoutSource !== undefined ||
+    input.githubPrNumber !== undefined ||
+    input.branchName?.trim() ||
+    !input.firstAgentContext ||
+    !dependencies.prepareWorktreeNameForFirstAgent ||
+    !(await getProjectWorktreesRoot(input.cwd))
+  ) {
+    return { input, preparedFirstAgentName: false };
+  }
+
+  const generated = await dependencies.prepareWorktreeNameForFirstAgent({
+    cwd: input.cwd,
+    firstAgentContext: input.firstAgentContext,
+  });
+  if (!generated) {
+    return { input, preparedFirstAgentName: true };
+  }
+  return {
+    input: {
+      ...input,
+      ...(generated.branch ? { branchName: generated.branch } : {}),
+      ...(input.title?.trim() || !generated.title ? {} : { title: generated.title }),
+    },
+    preparedFirstAgentName: true,
+  };
+}
+
 export async function createPaseoWorktreeWorkflow(
   dependencies: CreatePaseoWorktreeWorkflowDependencies,
   input: CreatePaseoWorktreeInput,
@@ -345,9 +383,10 @@ export async function createPaseoWorktreeWorkflow(
     resolveDefaultBranch?: (repoRoot: string) => Promise<string>;
   },
 ): Promise<CreatePaseoWorktreeWorkflowResult> {
+  const prepared = await prepareWorktreeCreationInput(dependencies, input);
   const createdWorktree = await dependencies.createPaseoWorktree(
     {
-      ...input,
+      ...prepared.input,
 
       paseoHome: input.paseoHome ?? dependencies.paseoHome,
       worktreesRoot: input.worktreesRoot ?? dependencies.worktreesRoot,
@@ -378,7 +417,7 @@ export async function createPaseoWorktreeWorkflow(
   }
 
   setTimeout(() => {
-    if (input.firstAgentContext) {
+    if (input.firstAgentContext && !prepared.preparedFirstAgentName) {
       dependencies.autoNameWorkspaceBranchForFirstAgent({
         workspace,
         firstAgentContext: input.firstAgentContext,

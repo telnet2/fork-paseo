@@ -256,10 +256,10 @@ export async function attemptFirstAgentBranchAutoName(options: {
 
 const MAX_BRANCH_NAME_SUFFIX_ATTEMPTS = 50;
 
-async function findAvailableBranchName(options: {
+export async function findAvailableBranchName(options: {
   cwd: string;
   desiredName: string;
-  placeholderBranchName: string;
+  placeholderBranchName?: string;
   localBranchExists: (cwd: string, branchName: string) => Promise<boolean>;
 }): Promise<string | null> {
   const { cwd, desiredName, placeholderBranchName } = options;
@@ -287,7 +287,8 @@ async function maybeMarkFirstAgentBranchAutoNameEligible(options: {
     return;
   }
   // A branch the caller named is their choice; only a placeholder slug is replaced.
-  if (input.branchName !== undefined) {
+  const metadata = await readPaseoWorktreeMetadata(createdWorktree.worktree.worktreePath);
+  if (input.branchName !== undefined || metadata?.projectWorktreesRoot) {
     return;
   }
 

@@ -37,14 +37,17 @@ That matters because real development rarely fits into one long chat. You might 
 
 In Paseo, the workspace is the stable container. The sessions are what you run inside it.
 
-## Choose the isolation
+## Choose how to start
 
-Every workspace has an isolation mode:
+The New Workspace screen offers three starting modes:
 
-- **Local** uses an existing directory, such as your main checkout. Use it when sessions should share the files already on disk.
-- **Worktree** creates or opens a managed git worktree. Use it when a task needs its own directory and branch.
+- **Local** uses the selected project's main directory. Use it when sessions should share the files already on disk.
+- **New worktree** creates a Paseo-managed git worktree. Enter a branch name to create that exact branch, or leave it empty to let Paseo name the branch from the first prompt.
+- **Resume workspace** keeps the selected parent project but uses any existing directory on the selected host as the workspace's working directory. Use it for an existing Git worktree created outside Paseo or another checkout that belongs under the same project.
 
-The workspace is the product concept; a git worktree is one way to isolate its files. More than one workspace can refer to the same managed worktree, and Paseo removes that worktree after its last workspace is archived.
+The workspace is the product concept; a git worktree is one way to isolate its files. More than one workspace can refer to the same managed worktree, and Paseo removes that worktree after its last workspace is archived. A directory opened with **Resume workspace** remains externally owned, so archiving the workspace never removes the directory.
+
+An existing session keeps the working directory it was started with. To work in another directory, select its parent project, create a workspace with **Resume workspace**, and start a new session there. The resumed directory supplies workspace-local `paseo.json` scripts and settings; selecting a parent project controls ownership and sidebar grouping, not config-file inheritance.
 
 ## Creating a workspace
 

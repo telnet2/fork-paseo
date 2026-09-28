@@ -1,3 +1,4 @@
+import { useResumeDirectoryPicker } from "@/fork/workspaces/resume-directory";
 import { useAddHost } from "@/hosts/add-host";
 import type {
   CreateAgentRequestOptions,
@@ -108,6 +109,7 @@ import {
   createNewWorkspaceSetup,
   useNewWorkspaceSetupState,
   type NewWorkspaceSetup,
+  type WorkspaceStartMode,
 } from "./new-workspace/setup-model";
 import {
   resolveNewWorkspaceAutomaticServerId,
@@ -191,11 +193,22 @@ function noopClearDraft() {}
 const PROJECT_PICK_ACTIONS: readonly KeyboardActionId[] = ["workspace.project.pick"];
 
 interface WorkspaceIsolationState {
-  isolation: "local" | "worktree";
-  setIsolation: (value: "local" | "worktree") => void;
-  effectiveIsolation: "local" | "worktree";
+  isolation: WorkspaceStartMode;
+  setIsolation: (value: WorkspaceStartMode) => void;
+  effectiveIsolation: WorkspaceStartMode;
   canCreateWorktree: boolean;
+  canResumeWorkspace: boolean;
   showRefPicker: boolean;
+}
+
+function resolveEffectiveStartMode(input: {
+  isolation: WorkspaceStartMode;
+  canCreateWorktree: boolean;
+  canResumeWorkspace: boolean;
+}): WorkspaceStartMode {
+  if (input.isolation === "resume" && input.canResumeWorkspace) return "resume";
+  if (input.isolation === "worktree" && input.canCreateWorktree) return "worktree";
+  return "local";
 }
 
 // Preserve the user's worktree choice while route metadata is provisional. Once
@@ -212,14 +225,16 @@ function useWorkspaceIsolation(input: {
   const { preferences } = useFormPreferences();
   const { manualIsolation } = useNewWorkspaceSetupState(setup);
   const isolation = manualIsolation ?? preferences.isolation ?? "local";
-  const isWorktree = isolation === "worktree" && canCreateWorktree;
+  const canResumeWorkspace = supportsMultiplicity;
+  const effectiveIsolation = resolveEffectiveStartMode({ isolation, canCreateWorktree, canResumeWorkspace });
 
   return {
     isolation,
     setIsolation: setup.chooseIsolation,
-    effectiveIsolation: isWorktree ? "worktree" : "local",
+    effectiveIsolation,
     canCreateWorktree,
-    showRefPicker: !supportsMultiplicity || isWorktree,
+    canResumeWorkspace,
+    showRefPicker: !supportsMultiplicity || effectiveIsolation === "worktree",
   };
 }
 
@@ -280,12 +295,20 @@ interface WorkspaceCreationResult {
   agent?: AgentSnapshotPayload;
 }
 
+
+function shouldShowManualBranchName(
+  isolation: WorkspaceStartMode,
+  selectedItem: PickerItem | null,
+): boolean {
+  return isolation === "worktree" && selectedItem?.kind !== "github-pr";
+}
+
 async function createMultiplicityWorkspace(input: {
   idempotencyKey: string;
-  worktreeSlug: string;
+  worktreeSlug?: string;
   client: NonNullable<ReturnType<typeof useHostRuntimeClient>>;
-  isolation: "local" | "worktree";
-  project: HostProjectListItem;
+  isolation: WorkspaceStartMode;
+  project: HostProjectListItem | null;
   sourceDirectory: string;
   checkoutRequest: PickerCheckoutRequest | undefined;
   /** Names the new branch of a worktree cut from a branch. */
@@ -304,8 +327,12 @@ async function createMultiplicityWorkspace(input: {
   serverId: string;
   createFailedMessage: string;
 }): Promise<WorkspaceCreationResult> {
-  const projectId = getHostProjectId(input.project, input.serverId);
-  if (!projectId) throw new Error("Project is not available on the selected host");
+  const projectId = input.project
+    ? (getHostProjectId(input.project, input.serverId) ?? undefined)
+    : undefined;
+  if (!projectId) {
+    throw new Error("Project is not available on the selected host");
+  }
   const isWorktree = input.isolation === "worktree";
   const firstAgentContext = buildFirstAgentContext({
     prompt: input.prompt,
@@ -320,7 +347,7 @@ async function createMultiplicityWorkspace(input: {
           kind: "worktree",
           cwd: input.sourceDirectory,
           projectId,
-          worktreeSlug: input.worktreeSlug,
+          ...(input.worktreeSlug ? { worktreeSlug: input.worktreeSlug } : {}),
           ...input.checkoutRequest,
           ...(input.branchName && startsNewBranch(input.checkoutRequest)
             ? { branchName: input.branchName }
@@ -329,7 +356,7 @@ async function createMultiplicityWorkspace(input: {
       : {
           kind: "directory",
           path: input.sourceDirectory,
-          projectId,
+          ...(projectId ? { projectId } : {}),
         },
     ...(firstAgentContext ? { firstAgentContext } : {}),
     ...(Object.keys(input.metadata).length > 0 ? { metadata: { ...input.metadata } } : {}),
@@ -986,6 +1013,39 @@ export function NewWorkspaceScreen({
   const projectIconDataByProjectViewKey = useProjectIcons({
     projects: projectIconTargets,
   });
+  const { setup, pluginProject, canCreateWorktree, isPending } = usePluginSetup({
+    serverId: selectedServerId,
+    project: selectedProject,
+    supportsMultiplicity: supportsWorkspaceMultiplicity,
+    pendingAction,
+    isDraftHandoffActive,
+    updatePreferences: updateFormPreferences,
+    setAttachments: (attachments) => chatDraft.setAttachments(attachments),
+  });
+  const { effectiveIsolation, setIsolation, canResumeWorkspace, showRefPicker } = useWorkspaceIsolation({
+    setup,
+    supportsMultiplicity: supportsWorkspaceMultiplicity,
+    canCreateWorktree,
+  });
+  const withConnectedClient = useCallback(() => {
+    const connectedClient = getHostRuntimeStore().getClient(selectedServerId);
+    if (!connectedClient?.isConnected) {
+      throw new Error(t("newWorkspace.errors.hostDisconnected"));
+    }
+    return connectedClient;
+  }, [selectedServerId, t]);
+  const clientReady = isConnected && Boolean(client);
+  const resumeDirectoryPicker = useResumeDirectoryPicker({
+    projects,
+    selectedServerId,
+    clientReady,
+    enabled: effectiveIsolation === "resume",
+    withConnectedClient,
+    t,
+  });
+  const effectiveSourceDirectory = effectiveIsolation === "resume"
+    ? resumeDirectoryPicker.selectedDirectory
+    : selectedSourceDirectory;
   const draftKey = buildNewWorkspaceDraftKey(draftId);
   const forkDraftSetup = usePendingWorkspaceDraftSetup(draftId);
   const draftContextScopeKey = useDraftWorkspaceAttachmentScopeKey(draftId);
@@ -998,22 +1058,14 @@ export function NewWorkspaceScreen({
     composer: buildComposerConfig({
       serverId: selectedServerId,
       workspaceDirectory: workspace?.workspaceDirectory ?? null,
-      sourceDirectory: selectedSourceDirectory,
+      sourceDirectory: effectiveSourceDirectory,
       initialSetup: forkDraftSetup?.setup,
     }),
   });
   const composerState = chatDraft.composerState;
-  const { setup, pluginProject, canCreateWorktree, isPending } = usePluginSetup({
-    serverId: selectedServerId,
-    project: selectedProject,
-    supportsMultiplicity: supportsWorkspaceMultiplicity,
-    pendingAction,
-    isDraftHandoffActive,
-    updatePreferences: updateFormPreferences,
-    setAttachments: chatDraft.setAttachments,
-  });
   const dispatchPickerSelection = setup.dispatchPicker;
-  const selectedItem = useNewWorkspaceSetupState(setup).pickerSelection.selectedItem;
+  const setupState = useNewWorkspaceSetupState(setup);
+  const selectedItem = setupState.pickerSelection.selectedItem;
 
   const handleForgeChangeRequestDetected = useCallback(() => {
     dispatchPickerSelection({ type: "pr-detected" });
@@ -1029,27 +1081,12 @@ export function NewWorkspaceScreen({
     [dispatchPickerSelection],
   );
 
-  const withConnectedClient = useCallback(() => {
-    const connectedClient = getHostRuntimeStore().getClient(selectedServerId);
-    if (!connectedClient?.isConnected) {
-      throw new Error(t("newWorkspace.errors.hostDisconnected"));
-    }
-    return connectedClient;
-  }, [selectedServerId, t]);
-
-  const clientReady = isConnected && Boolean(client);
   const hasSelectedSourceDirectory = selectedSourceDirectory !== null;
   const pickerQueryEnabled = pickerOpen && clientReady && hasSelectedSourceDirectory;
 
   const { status: checkoutStatus } = useCheckoutStatusQuery({
     serverId: selectedServerId,
     cwd: selectedSourceDirectory ?? "",
-  });
-
-  const { effectiveIsolation, setIsolation, showRefPicker } = useWorkspaceIsolation({
-    setup,
-    supportsMultiplicity: supportsWorkspaceMultiplicity,
-    canCreateWorktree,
   });
 
   const branchSuggestionsQuery = useQuery({
@@ -1163,9 +1200,17 @@ export function NewWorkspaceScreen({
   const handleSelectWorkspaceHost = useCallback(
     (id: string) => {
       handleSelectHost(id);
+      if (id !== selectedServerId) {
+        resumeDirectoryPicker.reset();
+      }
       clearPickerSelectionForTargetChange(selectedServerId, id);
     },
-    [clearPickerSelectionForTargetChange, handleSelectHost, selectedServerId],
+    [
+      clearPickerSelectionForTargetChange,
+      handleSelectHost,
+      resumeDirectoryPicker,
+      selectedServerId,
+    ],
   );
 
   const handleAddProject = useCallback(() => {
@@ -1237,8 +1282,12 @@ export function NewWorkspaceScreen({
       if (!selectedProject) {
         throw new Error("Choose a project");
       }
-      if (!selectedSourceDirectory) {
-        throw new Error("Choose a host for this project");
+      if (!effectiveSourceDirectory) {
+        throw new Error(
+          effectiveIsolation === "resume"
+            ? t("newWorkspace.resume.chooseDirectory")
+            : "Choose a host for this project",
+        );
       }
       const connectedClient = withConnectedClient();
       const createsWorktree = !supportsWorkspaceMultiplicity || effectiveIsolation === "worktree";
@@ -1247,7 +1296,7 @@ export function NewWorkspaceScreen({
             queryClient,
             client: connectedClient,
             serverId: selectedServerId,
-            cwd: selectedSourceDirectory,
+            cwd: effectiveSourceDirectory,
           })
         : null;
       const checkoutRequest = checkoutStatusForCreate
@@ -1259,9 +1308,9 @@ export function NewWorkspaceScreen({
         idempotencyKey: creationIdentity.draftId,
         worktreeSlug: creationIdentity.worktreeSlug,
         client: connectedClient,
-        isolation: createsWorktree ? "worktree" : "local",
+        isolation: effectiveIsolation,
         project: selectedProject,
-        sourceDirectory: selectedSourceDirectory,
+        sourceDirectory: effectiveSourceDirectory,
         checkoutRequest,
         branchName: setup.getSnapshot().branch,
         metadata: setup.getSnapshot().metadata,
@@ -1281,6 +1330,7 @@ export function NewWorkspaceScreen({
       creationIdentity,
       creationResult,
       effectiveIsolation,
+      effectiveSourceDirectory,
       mergeWorkspaces,
       queryClient,
       selectedItem,
@@ -1380,7 +1430,7 @@ export function NewWorkspaceScreen({
       setPendingAction("terminal");
       let outcome: SubmitOutcome = "background";
       await runCreateTerminalWorkspace({
-        cwd: selectedSourceDirectory ?? "",
+        cwd: effectiveSourceDirectory ?? "",
         prompt: terminalPromptText,
         profile: selectedTerminalProfile,
         profileName: selectedTerminalProfile?.name,
@@ -1435,11 +1485,11 @@ export function NewWorkspaceScreen({
     }
   }, [
     ensureWorkspace,
+    effectiveSourceDirectory,
     isStillOnCreateScreen,
     launchTarget,
     queryClient,
     selectedServerId,
-    selectedSourceDirectory,
     selectedTerminalProfile,
     t,
     terminalPromptText,
@@ -1504,6 +1554,7 @@ export function NewWorkspaceScreen({
       onOpenChange: handleIsolationPickerOpenChange,
       effectiveIsolation,
       canCreateWorktree,
+      canResumeWorkspace,
       onSelect: setIsolation,
     },
     base: {
@@ -1521,6 +1572,12 @@ export function NewWorkspaceScreen({
       setSearchQuery: setPickerSearchQuery,
       emptyText: pickerEmptyText,
       showRefPicker,
+    },
+    resume: resumeDirectoryPicker,
+    branch: {
+      value: setupState.branch ?? "",
+      onChange: setup.chooseBranch,
+      visible: shouldShowManualBranchName(effectiveIsolation, selectedItem),
     },
     launch: {
       serverId: selectedServerId,
@@ -1557,7 +1614,7 @@ export function NewWorkspaceScreen({
       textReplacement={terminalTextReplacement}
       attachments={NO_TERMINAL_ATTACHMENTS}
       onChangeAttachments={noopChangeAttachments}
-      cwd={selectedSourceDirectory ?? ""}
+      cwd={effectiveSourceDirectory ?? ""}
       clearDraft={noopClearDraft}
       autoFocus={terminalTakesPrompt}
       autoFocusKey={launchFocusKey}
@@ -1586,7 +1643,7 @@ export function NewWorkspaceScreen({
       onChangeAttachments={chatDraft.setAttachments}
       onForgeChangeRequestDetected={handleForgeChangeRequestDetected}
       onForgeChangeRequestAutoAttach={handleForgeChangeRequestAutoAttach}
-      cwd={selectedSourceDirectory ?? ""}
+      cwd={effectiveSourceDirectory ?? ""}
       clearDraft={handleClearDraft}
       autoFocus
       autoFocusKey={launchFocusKey}

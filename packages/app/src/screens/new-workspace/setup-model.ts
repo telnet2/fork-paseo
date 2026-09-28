@@ -10,11 +10,12 @@ import {
 } from "../new-workspace-picker-state";
 
 type Isolation = "local" | "worktree";
+export type WorkspaceStartMode = Isolation | "resume";
 
 /** What the user has chosen on the New workspace screen, apart from project and host. */
 interface SetupState {
   pickerSelection: PickerSelectionState;
-  manualIsolation: Isolation | null;
+  manualIsolation: WorkspaceStartMode | null;
   /** The name for a new worktree branch; null lets Paseo pick one. */
   branch: string | null;
   /** The created workspace's metadata. */
@@ -60,7 +61,8 @@ export interface NewWorkspaceSetup {
   /** The base picker's entry, and the one `setBaseRef` takes. */
   chooseBase(item: PickerItem): void;
   /** The isolation picker's entry, and the one `setIsolation` takes. */
-  chooseIsolation(isolation: Isolation): void;
+  chooseIsolation(isolation: WorkspaceStartMode): void;
+  chooseBranch(name: string): void;
   syncInputs(inputs: SetupInputs): void;
   /**
    * Commands for the items mounted for `target`. Once the screen is on another project or host
@@ -115,9 +117,9 @@ export function createNewWorkspaceSetup(
     dispatchPicker({ type: "picker-selected", item });
     effects.syncBaseAttachment(item);
   };
-  const chooseIsolation = (isolation: Isolation) => {
+  const chooseIsolation = (isolation: WorkspaceStartMode) => {
     update({ manualIsolation: isolation });
-    effects.persistIsolation(isolation);
+    if (isolation !== "resume") effects.persistIsolation(isolation);
   };
   const commandsFor = (target: SetupTarget): SetupCommands => {
     const unlocked = (): SetupInputs => {
@@ -167,6 +169,7 @@ export function createNewWorkspaceSetup(
     dispatchPicker,
     chooseBase,
     chooseIsolation,
+    chooseBranch: (name) => update({ branch: name || null }),
     syncInputs: (next) => {
       inputs = next;
       // A branch and metadata are chosen for one project on one host. A project id can repeat

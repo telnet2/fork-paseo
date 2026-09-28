@@ -1,3 +1,7 @@
+import { execFileSync } from "node:child_process";
+import { existsSync } from "node:fs";
+import { rm } from "node:fs/promises";
+
 import { test, expect, type Page } from "../support/fixtures";
 import { gotoAppShell } from "../support/helpers/app";
 import { gotoWorkspace } from "../support/helpers/launcher";
@@ -15,6 +19,7 @@ import { getServerId } from "../support/helpers/server-id";
 import { openFilesPanel } from "../support/helpers/workspace-tabs";
 import { projectEquivalenceViewKey } from "../support/helpers/project-view-key";
 import { waitForSidebarHydration } from "../support/helpers/workspace-ui";
+import { createTempGitRepo } from "../support/helpers/workspace";
 
 // Model B reshape: a workspace is the unit, its isolation (local checkout or
 // worktree) is a CHOICE at creation, and creation NEVER dedupes by
@@ -37,6 +42,7 @@ async function createWorkspaceViaUi(
     // null when the project has no git checkout: there is no Isolation control to
     // touch, the isolation is implicitly local.
     isolation: "local" | "worktree" | null;
+    branchName?: string;
     previousWorkspaceId: string;
     client: Awaited<ReturnType<typeof connectNewWorkspaceDaemonClient>>;
   },
@@ -45,6 +51,9 @@ async function createWorkspaceViaUi(
   await selectNewWorkspaceProject(page, input.project);
   if (input.isolation !== null) {
     await selectWorkspaceIsolation(page, input.isolation);
+  }
+  if (input.branchName) {
+    await page.getByTestId("new-workspace-branch-name-input").fill(input.branchName);
   }
   await submitNewWorkspaceEmpty(page);
 
@@ -166,6 +175,113 @@ test.describe("Workspace multiplicity creation flow", () => {
         .archivePaseoWorktree({ worktreePath: worktree.workspaceDirectory })
         .catch(() => undefined);
     } finally {
+      await seeded.cleanup();
+    }
+  });
+
+  test("New worktree accepts an explicit branch name", async ({ page }) => {
+    const seeded: SeededWorkspace = await seedWorkspace({
+      repoPrefix: "multiplicity-manual-branch-",
+    });
+
+    try {
+      const branchName = "feat/manual-worktree";
+      await gotoAppShell(page);
+      await waitForSidebarHydration(page);
+      await expect(page.getByTestId(workspaceRowTestId(seeded.workspaceId))).toBeVisible({
+        timeout: 30_000,
+      });
+
+      const worktree = await createWorkspaceViaUi(page, {
+        project: {
+          projectKey: seeded.projectKey,
+          projectDisplayName: seeded.projectDisplayName,
+        },
+        isolation: "worktree",
+        branchName,
+        previousWorkspaceId: seeded.workspaceId,
+        client,
+      });
+
+      expect(
+        execFileSync("git", ["branch", "--show-current"], {
+          cwd: worktree.workspaceDirectory,
+          encoding: "utf8",
+        }).trim(),
+      ).toBe(branchName);
+
+      await client
+        .archivePaseoWorktree({ worktreePath: worktree.workspaceDirectory })
+        .catch(() => undefined);
+    } finally {
+      await seeded.cleanup();
+    }
+  });
+
+  test("Resume workspace opens an external git worktree without taking ownership", async ({
+    page,
+  }) => {
+    const seeded: SeededWorkspace = await seedWorkspace({
+      repoPrefix: "multiplicity-resume-seed-",
+    });
+    const sourceRepo = await createTempGitRepo("multiplicity-resume-source-");
+    const existingDirectory = `${sourceRepo.path}-external-worktree`;
+    execFileSync(
+      "git",
+      ["worktree", "add", "-b", "feat/resume-existing", existingDirectory, "main"],
+      { cwd: sourceRepo.path, stdio: "ignore" },
+    );
+    let resumedWorkspaceId: string | null = null;
+
+    try {
+      await gotoAppShell(page);
+      await waitForSidebarHydration(page);
+      await openGlobalNewWorkspaceComposer(page);
+      await selectWorkspaceIsolation(page, "resume");
+
+      await expect(page.getByTestId("new-workspace-project-picker-trigger")).toContainText(
+        seeded.projectDisplayName,
+      );
+
+      await page.getByTestId("new-workspace-resume-directory-trigger").click();
+      const search = page.getByPlaceholder("Search or enter a directory path");
+      await expect(search).toBeVisible({ timeout: 30_000 });
+      await search.fill(existingDirectory.slice(0, -4));
+      await page.getByRole("button", { name: existingDirectory, exact: true }).click();
+
+      await submitNewWorkspaceEmpty(page);
+      const resumed = await assertNewWorkspaceSidebarAndHeader(page, {
+        serverId: getServerId(),
+        client,
+        previousWorkspaceId: seeded.workspaceId,
+        projectDisplayName: seeded.projectDisplayName,
+        assertSidebarRow: false,
+        assertHeader: false,
+      });
+      resumedWorkspaceId = resumed.workspaceId;
+
+      expect(resumed.workspaceDirectory).toBe(existingDirectory);
+      const descriptor = (await client.fetchWorkspaces()).entries.find(
+        (entry) => entry.id === resumed.workspaceId,
+      );
+      expect(descriptor?.workspaceKind).toBe("worktree");
+      expect(descriptor?.projectId).toBe(seeded.projectId);
+
+      const archiveResult = await client.archiveWorkspace(resumed.workspaceId);
+      expect(archiveResult.error).toBeNull();
+      resumedWorkspaceId = null;
+      expect(existsSync(existingDirectory)).toBe(true);
+    } finally {
+      if (resumedWorkspaceId) await client.archiveWorkspace(resumedWorkspaceId);
+      try {
+        execFileSync("git", ["worktree", "remove", existingDirectory, "--force"], {
+          cwd: sourceRepo.path,
+          stdio: "ignore",
+        });
+      } catch {
+        await rm(existingDirectory, { recursive: true, force: true });
+      }
+      await sourceRepo.cleanup();
       await seeded.cleanup();
     }
   });

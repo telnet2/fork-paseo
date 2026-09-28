@@ -1,3 +1,4 @@
+import { resolve } from "node:path";
 import type { PluginWorktreeCreateRequest } from "@getpaseo/plugin/server";
 import type { PluginLifecycle } from "./plugins/lifecycle/index.js";
 import { createNameId } from "mnemonic-id";
@@ -6,6 +7,7 @@ import type { ForgeService } from "../services/forge-service.js";
 import {
   createWorktree,
   resolveDefaultWorktreePath,
+  getProjectWorktreesRoot,
   slugify,
   validateBranchSlug,
   type CreatedWorktree,
@@ -61,6 +63,7 @@ async function createWorktreeCoreWithPriority(
   input: CreateWorktreeCoreInput,
   deps: CreateWorktreeCoreDeps,
 ): Promise<CreateWorktreeCoreResult> {
+  const projectWorktreesRoot = await getProjectWorktreesRoot(input.cwd);
   const repoRoot = await resolveWorktreeRepoRoot(input, deps.workspaceGitService);
   const requestedWorktreeSlug = input.worktreeSlug
     ? normalizeWorktreeSlug(input.worktreeSlug)
@@ -118,12 +121,18 @@ async function createWorktreeCoreWithPriority(
     }
   }
 
-  const defaultPath = await resolveDefaultWorktreePath({
-    cwd: repoRoot,
-    paseoHome: input.paseoHome,
-    worktreesRoot: input.worktreesRoot,
-    worktreeSlug: normalizedSlug,
-  });
+  const defaultDirectoryName =
+    projectWorktreesRoot && (intent.kind === "branch-off" || intent.kind === "checkout-branch")
+      ? intent.branchName
+      : normalizedSlug;
+  const defaultPath = projectWorktreesRoot
+    ? resolve(projectWorktreesRoot, defaultDirectoryName)
+    : await resolveDefaultWorktreePath({
+        cwd: repoRoot,
+        paseoHome: input.paseoHome,
+        worktreesRoot: input.worktreesRoot,
+        worktreeSlug: normalizedSlug,
+      });
   const { stdout: sourceRoot } = await runGitCommand(["rev-parse", "--show-toplevel"], {
     cwd: input.cwd,
   });
@@ -143,6 +152,7 @@ async function createWorktreeCoreWithPriority(
   return {
     worktree: await createWorktree({
       cwd: repoRoot,
+      projectWorktreesRoot,
       worktreeSlug: normalizedSlug,
       worktreePath: transformed.path,
       source: intent,
