@@ -4,11 +4,19 @@ Upstream release notes remain in the upstream changelog. Entries here describe o
 
 ## 2026-10-01 — Rebase onto 0.11.0-beta.2
 
-- Rebase all seven fork commits from c081e0350 onto upstream main b5b43edd6.
+- Rebase the fork onto upstream main b5b43edd6 and preserve all nine feature commits from the personal fork.
 - Preserve upstream's Appearance settings layout and restore the Custom CSS section at its existing integration site.
-- Retain queue status, Trae skill warnings, compact CSS selectors, and build identity hooks. Update the recorded upstream base and version.
+- Retain queue status, Trae skill warnings, compact CSS selectors, build identity, resumable directories, named worktrees, and the composer label picker. Preserve exact worktree placement for both branch and branchless recovery. Update the recorded upstream base and version.
 
-Validation: server/CLI build and 19 focused server/client/browser tests passed. Workspace typecheck, lint, and formatting passed.
+Validation: server/CLI builds and 19 focused fork tests passed. Another 101 focused worktree, recovery, project-config, and directory-search tests passed after integrating the personal fork. Workspace typecheck, lint, and formatting passed.
+
+## 2026-09-28 — Rebase onto Paseo 0.10.0-beta.1
+
+- Rebase the nine fork commits from `c081e0350` onto upstream `30178c4f5`.
+- Keep upstream's reorganized Appearance settings and insert the Custom CSS section without restoring settings that upstream moved elsewhere.
+- Preserve queue status, skill-warning presentation, Custom CSS, fork build identity, named worktrees, resumable directories, and composer label assignment.
+
+Validation: client and server builds, 14 focused fork server tests, 5 focused fork app tests, 52 worktree tests, 33 project-config and directory-search tests, and 36 focused browser E2E scenarios passed. Workspace typecheck, lint, and formatting passed. Packaging verification is recorded per artifact.
 
 ## 2026-09-27 — Branch and commit in About (0.9.2 fork)
 
