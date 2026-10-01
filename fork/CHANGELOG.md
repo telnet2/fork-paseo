@@ -2,6 +2,14 @@
 
 Upstream release notes remain in the upstream changelog. Entries here describe only bs-main-0926.
 
+## 2026-10-01 — Rebase onto 0.11.0-beta.2
+
+- Rebase all seven fork commits from c081e0350 onto upstream main b5b43edd6.
+- Preserve upstream's Appearance settings layout and restore the Custom CSS section at its existing integration site.
+- Retain queue status, Trae skill warnings, compact CSS selectors, and build identity hooks. Update the recorded upstream base and version.
+
+Validation: server/CLI build and 19 focused server/client/browser tests passed. Workspace typecheck, lint, and formatting passed.
+
 ## 2026-09-27 — Branch and commit in About (0.9.2 fork)
 
 - Show the build branch and commit in Settings → About and the native macOS About panel, including a dirty marker for uncommitted builds.
