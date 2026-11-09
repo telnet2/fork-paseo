@@ -1,4 +1,4 @@
-Paseo fork for Apple Silicon (bs-main-0926)
+Paseo fork for Apple Silicon
 
 Requires macOS 13 or later on an Apple Silicon Mac.
 

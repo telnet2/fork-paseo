@@ -1,4 +1,5 @@
 import { test, expect } from "../support/fixtures";
+import { scrollChatAwayFromBottom } from "../support/helpers/agent-bottom-anchor";
 import { openSettingsSection } from "../support/helpers/settings";
 import { openAgentRoute, seedMockAgentWorkspace } from "../support/helpers/mock-agent";
 
@@ -29,7 +30,11 @@ test("saves CSS, widens the transcript, preserves narrow layouts, and resets", a
     await page.addInitScript(() => {
       localStorage.setItem(
         "@paseo:app-settings",
-        JSON.stringify({ toolCallDetailLevel: "overview", contentFontSize: 15 }),
+        JSON.stringify({
+          chatDisplay: "collapseToolCalls",
+          autoExpandReasoning: true,
+          contentFontSize: 15,
+        }),
       );
     });
     await openCssSettings(page);
@@ -70,10 +75,7 @@ test("saves CSS, widens the transcript, preserves narrow layouts, and resets", a
       "border-top-width",
       "3px",
     );
-    await expect(assistant.locator('[data-paseo-markdown-tag="p"]').first()).toHaveCSS(
-      "margin-bottom",
-      "4px",
-    );
+    await expect(assistant.locator("p").first()).toHaveCSS("margin-bottom", "4px");
     await expect(page.locator('[data-paseo-gap="activity"]').first()).toHaveCSS(
       "margin-bottom",
       "0px",
@@ -82,7 +84,7 @@ test("saves CSS, widens the transcript, preserves narrow layouts, and resets", a
       '[data-paseo-activity="collapsed"] [data-paseo-activity-header]',
     );
     const paragraphLineHeight = await page
-      .locator('[data-paseo-assistant-spacing] [data-paseo-markdown-tag="p"]')
+      .locator("[data-paseo-assistant-spacing] p")
       .evaluateAll((paragraphs) => {
         for (const paragraph of paragraphs) {
           const walker = document.createTreeWalker(paragraph, NodeFilter.SHOW_TEXT);
@@ -104,11 +106,10 @@ test("saves CSS, widens the transcript, preserves narrow layouts, and resets", a
     expect(paragraphLineHeight).toBe(21);
     const firstActivity = activityHeaders.first();
     await expect(firstActivity).toHaveCSS("height", `${paragraphLineHeight}px`);
-    const firstTwo = await activityHeaders.evaluateAll((elements) =>
-      elements.slice(0, 2).map((element) => element.getBoundingClientRect().top),
+    const activityHeights = await activityHeaders.evaluateAll((elements) =>
+      elements.slice(0, 2).map((element) => element.getBoundingClientRect().height),
     );
-    expect(firstTwo).toHaveLength(2);
-    expect(firstTwo[1] - firstTwo[0]).toBe(paragraphLineHeight);
+    expect(activityHeights).toEqual([paragraphLineHeight, paragraphLineHeight]);
 
     const outline = page.getByTestId("chat-outline-rail");
     await expect(outline).toBeVisible();
@@ -119,6 +120,7 @@ test("saves CSS, widens the transcript, preserves narrow layouts, and resets", a
     expect(activityBounds!.x).toBeGreaterThanOrEqual(outlineBounds!.x + outlineBounds!.width + 4);
 
     // The compact rule must not constrain expanded details or change hover geometry.
+    await scrollChatAwayFromBottom(page, { deltaY: -160, minDistanceFromBottom: 72 });
     const group = page.getByTestId("tool-call-group").first();
     const groupHeader = group.locator("[data-paseo-activity-header]").first();
     await groupHeader.hover();

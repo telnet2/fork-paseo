@@ -2,7 +2,15 @@ import type { WorkspaceStartMode } from "../setup-model";
 import type { ResumeDirectoryPicker } from "@/fork/workspaces/resume-directory";
 import { FormTextInput } from "@/components/ui/form-field";
 import type { EditingTextInputHandle } from "@/components/ui/text-input";
-import { useCallback, useLayoutEffect, useMemo, useRef, type ReactElement, type ReactNode, type RefObject } from "react";
+import {
+  useCallback,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  type ReactElement,
+  type ReactNode,
+  type RefObject,
+} from "react";
 import { View } from "react-native";
 import { useTranslation } from "react-i18next";
 import { StyleSheet } from "react-native-unistyles";
@@ -142,8 +150,10 @@ function useIsolationPicker(
   // git checkout, since worktree isolation is impossible there.
   const options = useMemo<ComboboxOption[]>(() => {
     const choices = [{ id: "local", label: t("newWorkspace.isolation.local") }];
-    if (canCreateWorktree) choices.push({ id: "worktree", label: t("newWorkspace.isolation.worktree") });
-    if (canResumeWorkspace) choices.push({ id: "resume", label: t("newWorkspace.isolation.resume") });
+    if (canCreateWorktree)
+      choices.push({ id: "worktree", label: t("newWorkspace.isolation.worktree") });
+    if (canResumeWorkspace)
+      choices.push({ id: "resume", label: t("newWorkspace.isolation.resume") });
     return choices;
   }, [canCreateWorktree, canResumeWorkspace, t]);
   const handleSelect = useCallback(
@@ -175,17 +185,12 @@ function useRefRenderOption(itemById: Map<string, PickerItem>, isPending: boolea
  */
 export function useNewWorkspaceForm(props: NewWorkspaceFormProps): ReactElement {
   const { t } = useTranslation();
-  const { isCompact, isPending, pluginItems, project, host, isolation, base, launch, resume, branch } = props;
-  const branchInputRef = useRef<EditingTextInputHandle | null>(null);
-  useLayoutEffect(() => {
-    if (branchInputRef.current && branchInputRef.current.getText() !== branch.value) {
-      branchInputRef.current.replaceText(branch.value);
-    }
-  }, [branch.value]);
+  const { isCompact, isPending, pluginItems, project, host, isolation, base, launch } = props;
   const variant: FieldTriggerVariant = isCompact ? "field" : "badge";
   const projectPicker = useProjectPicker(project, isPending);
   const isolationPicker = useIsolationPicker(isolation, isPending);
   const renderRefOption = useRefRenderOption(base.itemById, isPending);
+  const { resumeField, branchField, resumePicker } = useForkWorkspaceFields(props);
 
   const selectedHostLabel =
     host.allHosts.find((h) => h.serverId === host.selectedServerId)?.label ?? "Host";
@@ -212,7 +217,6 @@ export function useNewWorkspaceForm(props: NewWorkspaceFormProps): ReactElement 
   );
   const isWorktree = isolation.effectiveIsolation === "worktree";
   const isolationValue = t(`newWorkspace.isolation.${isolation.effectiveIsolation}`);
-  const isResume = isolation.effectiveIsolation === "resume";
   const refIcon = base.selectedItem?.kind === "github-pr" ? pullRequestIcon : branchIcon;
 
   const projectField = (
@@ -259,20 +263,21 @@ export function useNewWorkspaceForm(props: NewWorkspaceFormProps): ReactElement 
       />
     </HostPicker>
   );
-  const isolationField = isolation.canCreateWorktree || isolation.canResumeWorkspace ? (
-    <FieldTrigger
-      ref={isolation.anchorRef}
-      variant={variant}
-      label={t("newWorkspace.isolation.label")}
-      accessibilityLabel="Workspace isolation"
-      tooltip={t("newWorkspace.tooltips.isolation")}
-      icon={isWorktree ? branchIcon : folderIcon}
-      value={isolationValue}
-      onPress={isolation.open}
-      disabled={isPending}
-      testID="workspace-create-isolation-trigger"
-    />
-  ) : null;
+  const isolationField =
+    isolation.canCreateWorktree || isolation.canResumeWorkspace ? (
+      <FieldTrigger
+        ref={isolation.anchorRef}
+        variant={variant}
+        label={t("newWorkspace.isolation.label")}
+        accessibilityLabel="Workspace isolation"
+        tooltip={t("newWorkspace.tooltips.isolation")}
+        icon={isWorktree ? branchIcon : folderIcon}
+        value={isolationValue}
+        onPress={isolation.open}
+        disabled={isPending}
+        testID="workspace-create-isolation-trigger"
+      />
+    ) : null;
   const baseField = base.showRefPicker ? (
     <FieldTrigger
       ref={base.anchorRef}
@@ -285,33 +290,6 @@ export function useNewWorkspaceForm(props: NewWorkspaceFormProps): ReactElement 
       onPress={base.open}
       disabled={isPending || !base.selectedSourceDirectory}
       testID="new-workspace-ref-picker-trigger"
-    />
-  ) : null;
-  const resumeField = isResume ? (
-    <FieldTrigger
-      ref={resume.anchorRef}
-      variant={variant}
-      label={t("newWorkspace.resume.directory")}
-      icon={folderIcon}
-      value={resume.selectedDirectory ?? t("newWorkspace.resume.chooseDirectory")}
-      onPress={resume.open}
-      disabled={isPending}
-      tooltip={t("newWorkspace.resume.tooltip")}
-      testID="new-workspace-resume-directory-trigger"
-    />
-  ) : null;
-  const branchField = branch.visible ? (
-    <FormTextInput
-      ref={branchInputRef}
-      size={isCompact ? "md" : "sm"}
-      initialValue={branch.value}
-      onChangeText={branch.onChange}
-      placeholder={t("newWorkspace.worktree.branchNamePlaceholder")}
-      accessibilityLabel={t("newWorkspace.worktree.branchName")}
-      testID="new-workspace-branch-name-input"
-      editable={!isPending}
-      autoCapitalize="none"
-      autoCorrect={false}
     />
   ) : null;
   const launchField = (
@@ -354,20 +332,7 @@ export function useNewWorkspaceForm(props: NewWorkspaceFormProps): ReactElement 
         anchorRef={isolation.anchorRef}
         renderOption={isolationPicker.renderOption}
       />
-      <Combobox
-        options={resume.options}
-        value={resume.selectedDirectory ?? ""}
-        onSelect={resume.onSelect}
-        searchable
-        searchPlaceholder={t("newWorkspace.resume.searchPlaceholder")}
-        title={t("newWorkspace.resume.directory")}
-        open={resume.openState}
-        onOpenChange={resume.onOpenChange}
-        onSearchQueryChange={resume.setSearchQuery}
-        desktopPlacement="bottom-start"
-        anchorRef={resume.anchorRef}
-        emptyText={resume.emptyText}
-      />
+      {resumePicker}
       <Combobox
         options={base.options}
         value={base.selectedOptionId}
@@ -409,15 +374,83 @@ export function useNewWorkspaceForm(props: NewWorkspaceFormProps): ReactElement 
     <View testID="new-workspace-ref-picker-row" style={styles.desktopRow} pointerEvents="box-none">
       <View style={styles.desktopControl}>{projectField}</View>
       <View style={styles.desktopControl}>{hostField}</View>
-      {isolationField ? <View style={styles.desktopControl}>{isolationField}</View> : null}
-      {resumeField ?? baseField ? <View style={styles.desktopControl}>{resumeField ?? baseField}</View> : null}
-      {branchField ? <View style={styles.desktopControl}>{branchField}</View> : null}
+      <DesktopControl>{isolationField}</DesktopControl>
+      <DesktopControl>{resumeField ?? baseField}</DesktopControl>
+      <DesktopControl>{branchField}</DesktopControl>
       {pluginItems}
       <View style={styles.launchSpacer} pointerEvents="none" />
       {launchField}
       {pickers}
     </View>
   );
+}
+
+function DesktopControl({ children }: { children: ReactNode }): ReactElement | null {
+  if (!children) return null;
+  return <View style={styles.desktopControl}>{children}</View>;
+}
+
+interface ForkWorkspaceFields {
+  resumeField: ReactNode;
+  branchField: ReactNode;
+  resumePicker: ReactNode;
+}
+
+function useForkWorkspaceFields(props: NewWorkspaceFormProps): ForkWorkspaceFields {
+  const { t } = useTranslation();
+  const { resume, branch, isolation, isPending, isCompact } = props;
+  const variant: FieldTriggerVariant = isCompact ? "field" : "badge";
+  const isResume = isolation.effectiveIsolation === "resume";
+  const branchInputRef = useRef<EditingTextInputHandle | null>(null);
+  useLayoutEffect(() => {
+    if (branchInputRef.current && branchInputRef.current.getText() !== branch.value) {
+      branchInputRef.current.replaceText(branch.value);
+    }
+  }, [branch.value]);
+  const resumeField = isResume ? (
+    <FieldTrigger
+      ref={resume.anchorRef}
+      variant={variant}
+      label={t("newWorkspace.resume.directory")}
+      icon={folderIcon}
+      value={resume.selectedDirectory ?? t("newWorkspace.resume.chooseDirectory")}
+      onPress={resume.open}
+      disabled={isPending}
+      tooltip={t("newWorkspace.resume.tooltip")}
+      testID="new-workspace-resume-directory-trigger"
+    />
+  ) : null;
+  const branchField = branch.visible ? (
+    <FormTextInput
+      ref={branchInputRef}
+      size={isCompact ? "md" : "sm"}
+      initialValue={branch.value}
+      onChangeText={branch.onChange}
+      placeholder={t("newWorkspace.worktree.branchNamePlaceholder")}
+      accessibilityLabel={t("newWorkspace.worktree.branchName")}
+      testID="new-workspace-branch-name-input"
+      editable={!isPending}
+      autoCapitalize="none"
+      autoCorrect={false}
+    />
+  ) : null;
+  const resumePicker = (
+    <Combobox
+      options={resume.options}
+      value={resume.selectedDirectory ?? ""}
+      onSelect={resume.onSelect}
+      searchable
+      searchPlaceholder={t("newWorkspace.resume.searchPlaceholder")}
+      title={t("newWorkspace.resume.directory")}
+      open={resume.openState}
+      onOpenChange={resume.onOpenChange}
+      onSearchQueryChange={resume.setSearchQuery}
+      desktopPlacement="bottom-start"
+      anchorRef={resume.anchorRef}
+      emptyText={resume.emptyText}
+    />
+  );
+  return { resumeField, branchField, resumePicker };
 }
 
 const styles = StyleSheet.create((theme) => ({

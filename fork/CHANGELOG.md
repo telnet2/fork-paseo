@@ -1,6 +1,15 @@
 # Fork changelog
 
-Upstream release notes remain in the upstream changelog. Entries here describe only bs-main-0926.
+Upstream release notes remain in the upstream changelog. Entries here describe only the dated bs-main fork branches.
+
+## 2026-11-09 — bs-main-1109 on Paseo 0.15.3
+
+- Roll all eleven commits from bs-main-0926 onto upstream main e0f545fed; keep the previous branch unchanged.
+- Preserve queue status, Custom CSS, Trae skill warnings, build identity, directory resume, named worktrees, project worktree roots, and composer label assignment.
+- Adapt CSS anchors to the current Markdown renderer, composer scrolling and indentation. Integrate resume and branch choices with the upstream setup model, plugin creation hooks, asynchronous configuration and verified worktree metadata.
+- Generalize the rebase skill to dated branches and retain the active branch plus at most two historical branches locally and on the personal fork.
+
+Validation: server/CLI and declaration builds passed. All 70 focused server tests, 51 app tests, and 12 real-app browser scenarios passed across focused runs, including queue/warning handling, workspace resume and branch placement, labels, About identity, and CSS persistence, expansion/collapse, reset and wide/narrow layout. Workspace typecheck, lint, formatting, and skill validation passed.
 
 ## 2026-10-01 — Rebase onto 0.11.0-beta.2
 

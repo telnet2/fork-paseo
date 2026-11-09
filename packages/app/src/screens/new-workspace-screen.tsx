@@ -1,4 +1,7 @@
-import { useResumeDirectoryPicker } from "@/fork/workspaces/resume-directory";
+import {
+  useResumeDirectoryPicker,
+  resolveWorkspaceSourceDirectory,
+} from "@/fork/workspaces/resume-directory";
 import { useAddHost } from "@/hosts/add-host";
 import type {
   CreateAgentRequestOptions,
@@ -190,6 +193,8 @@ function noopChangeAttachments() {}
 function noopClearDraft() {}
 
 // Stable reference so the keyboard-action handler doesn't re-register each render.
+const PLUGIN_ISOLATION = { local: "local", worktree: "worktree", resume: "local" } as const;
+
 const PROJECT_PICK_ACTIONS: readonly KeyboardActionId[] = ["workspace.project.pick"];
 
 interface WorkspaceIsolationState {
@@ -226,7 +231,11 @@ function useWorkspaceIsolation(input: {
   const { manualIsolation } = useNewWorkspaceSetupState(setup);
   const isolation = manualIsolation ?? preferences.isolation ?? "local";
   const canResumeWorkspace = supportsMultiplicity;
-  const effectiveIsolation = resolveEffectiveStartMode({ isolation, canCreateWorktree, canResumeWorkspace });
+  const effectiveIsolation = resolveEffectiveStartMode({
+    isolation,
+    canCreateWorktree,
+    canResumeWorkspace,
+  });
 
   return {
     isolation,
@@ -294,7 +303,6 @@ interface WorkspaceCreationResult {
   workspace: ReturnType<typeof normalizeWorkspaceDescriptor>;
   agent?: AgentSnapshotPayload;
 }
-
 
 function shouldShowManualBranchName(
   isolation: WorkspaceStartMode,
@@ -1022,11 +1030,12 @@ export function NewWorkspaceScreen({
     updatePreferences: updateFormPreferences,
     setAttachments: (attachments) => chatDraft.setAttachments(attachments),
   });
-  const { effectiveIsolation, setIsolation, canResumeWorkspace, showRefPicker } = useWorkspaceIsolation({
-    setup,
-    supportsMultiplicity: supportsWorkspaceMultiplicity,
-    canCreateWorktree,
-  });
+  const { effectiveIsolation, setIsolation, canResumeWorkspace, showRefPicker } =
+    useWorkspaceIsolation({
+      setup,
+      supportsMultiplicity: supportsWorkspaceMultiplicity,
+      canCreateWorktree,
+    });
   const withConnectedClient = useCallback(() => {
     const connectedClient = getHostRuntimeStore().getClient(selectedServerId);
     if (!connectedClient?.isConnected) {
@@ -1043,9 +1052,11 @@ export function NewWorkspaceScreen({
     withConnectedClient,
     t,
   });
-  const effectiveSourceDirectory = effectiveIsolation === "resume"
-    ? resumeDirectoryPicker.selectedDirectory
-    : selectedSourceDirectory;
+  const effectiveSourceDirectory = resolveWorkspaceSourceDirectory({
+    mode: effectiveIsolation,
+    resumeDirectory: resumeDirectoryPicker.selectedDirectory,
+    selectedSourceDirectory,
+  });
   const draftKey = buildNewWorkspaceDraftKey(draftId);
   const forkDraftSetup = usePendingWorkspaceDraftSetup(draftId);
   const draftContextScopeKey = useDraftWorkspaceAttachmentScopeKey(draftId);
@@ -1158,7 +1169,12 @@ export function NewWorkspaceScreen({
   );
 
   const pluginScreen = useMemo<NewWorkspaceItemsScreen>(
-    () => ({ project: pluginProject, isolation: effectiveIsolation, baseItem, locked: isPending }),
+    () => ({
+      project: pluginProject,
+      isolation: PLUGIN_ISOLATION[effectiveIsolation],
+      baseItem,
+      locked: isPending,
+    }),
     [baseItem, effectiveIsolation, isPending, pluginProject],
   );
 
@@ -1308,7 +1324,7 @@ export function NewWorkspaceScreen({
         idempotencyKey: creationIdentity.draftId,
         worktreeSlug: creationIdentity.worktreeSlug,
         client: connectedClient,
-        isolation: effectiveIsolation,
+        isolation: createsWorktree ? "worktree" : effectiveIsolation,
         project: selectedProject,
         sourceDirectory: effectiveSourceDirectory,
         checkoutRequest,
@@ -1336,7 +1352,6 @@ export function NewWorkspaceScreen({
       selectedItem,
       selectedProject,
       selectedServerId,
-      selectedSourceDirectory,
       setup,
       supportsWorkspaceMultiplicity,
       t,

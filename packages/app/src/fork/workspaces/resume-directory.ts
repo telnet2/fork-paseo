@@ -1,12 +1,15 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { View } from "react-native";
-import { useQuery } from "@tanstack/react-query";
+import { useFetchQuery } from "@/data/query";
 import type { TFunction } from "i18next";
 import type { ComboboxOption } from "@/components/ui/combobox";
 import { buildProjectPickerOptions } from "@/components/project-picker-options";
 import { getHostProjectSourceDirectory, type HostProjectListItem } from "@/projects/host-projects";
 import type { useHostRuntimeClient } from "@/runtime/host-runtime";
-import { buildWorkingDirectorySearchRequest, resolveWorkingDirectorySearchPaths } from "@/utils/working-directory-suggestions";
+import {
+  buildWorkingDirectorySearchRequest,
+  resolveWorkingDirectorySearchPaths,
+} from "@/utils/working-directory-suggestions";
 
 export function useResumeDirectoryPicker(input: {
   projects: readonly HostProjectListItem[];
@@ -35,7 +38,8 @@ export function useResumeDirectoryPicker(input: {
       }),
     [input.projects, input.selectedServerId],
   );
-  const query = useQuery({
+  const query = useFetchQuery({
+    dataShape: "value",
     queryKey: ["new-workspace-resume-directories", input.selectedServerId, debouncedSearchQuery],
     queryFn: async () => {
       const request = buildWorkingDirectorySearchRequest(debouncedSearchQuery);
@@ -55,7 +59,7 @@ export function useResumeDirectoryPicker(input: {
       };
     },
     enabled: input.enabled && openState && input.clientReady,
-    staleTime: 15_000,
+    staleTimeMs: 15_000,
     retry: false,
   });
   const options = useMemo<ComboboxOption[]>(() => {
@@ -99,3 +103,11 @@ export function useResumeDirectoryPicker(input: {
 }
 
 export type ResumeDirectoryPicker = ReturnType<typeof useResumeDirectoryPicker>;
+
+export function resolveWorkspaceSourceDirectory(input: {
+  mode: "local" | "worktree" | "resume";
+  resumeDirectory: string | null;
+  selectedSourceDirectory: string | null;
+}): string | null {
+  return input.mode === "resume" ? input.resumeDirectory : input.selectedSourceDirectory;
+}

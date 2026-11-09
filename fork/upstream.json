@@ -1,7 +1,7 @@
 {
   "repository": "https://github.com/getpaseo/paseo.git",
   "branch": "main",
-  "commit": "b5b43edd65cc1253493b13cca3941dd390df6ef3",
-  "forkBranch": "bs-main-0926",
-  "version": "0.11.0-beta.2"
+  "commit": "e0f545fed485d244fcd3e6308c36e5a6397eaa2e",
+  "forkBranch": "bs-main-1109",
+  "version": "0.15.3"
 }

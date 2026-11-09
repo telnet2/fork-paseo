@@ -2291,7 +2291,9 @@ function ComposerContentImpl({
     if (!controls && !workspaceLabelTarget) return null;
     return (
       <ComposerInputProvider value={composerInput}>
-        {workspaceLabelTarget ? <ComposerWorkspaceLabelPicker target={workspaceLabelTarget} /> : null}
+        {workspaceLabelTarget ? (
+          <ComposerWorkspaceLabelPicker target={workspaceLabelTarget} />
+        ) : null}
         {controls}
       </ComposerInputProvider>
     );

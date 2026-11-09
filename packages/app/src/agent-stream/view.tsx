@@ -1863,10 +1863,7 @@ interface StreamItemWrapperProps {
 function StreamItemWrapper({ gapBelow, itemKind, turnIndent, children }: StreamItemWrapperProps) {
   const wrapperGap = turnIndent === "nested" || turnIndent === "openedHost" ? 0 : gapBelow;
   const wrapperStyle = useMemo(
-    () => [
-      stylesheet.streamItemWrapper,
-      { marginBottom: wrapperGap },
-    ],
+    () => [stylesheet.streamItemWrapper, { marginBottom: wrapperGap }],
     [wrapperGap],
   );
   const gapStyle = useMemo(() => ({ paddingBottom: gapBelow }), [gapBelow]);

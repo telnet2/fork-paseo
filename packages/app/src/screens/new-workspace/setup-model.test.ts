@@ -32,6 +32,27 @@ function recordingEffects() {
 }
 
 describe("New workspace setup commands", () => {
+  it("keeps directory resume transient and lets plugin commands replace it", async () => {
+    const { effects, isolations } = recordingEffects();
+    const setup = createNewWorkspaceSetup(READY, effects);
+    setup.chooseIsolation("resume");
+    expect(setup.getSnapshot().manualIsolation).toBe("resume");
+    expect(isolations).toEqual([]);
+    await commandsOf(setup).setIsolation("worktree");
+    expect(setup.getSnapshot().manualIsolation).toBe("worktree");
+    expect(isolations).toEqual(["worktree"]);
+  });
+
+  it("shares manual branch choices with plugin commands and clears automatic names", async () => {
+    const setup = createNewWorkspaceSetup(READY, recordingEffects().effects);
+    setup.chooseBranch("feature/manual");
+    expect(setup.getSnapshot().branch).toBe("feature/manual");
+    await commandsOf(setup).setBranch("feature/plugin");
+    expect(setup.getSnapshot().branch).toBe("feature/plugin");
+    setup.chooseBranch("");
+    expect(setup.getSnapshot().branch).toBeNull();
+  });
+
   it("accepts commands from the first moment, before the screen has committed", async () => {
     const setup = createNewWorkspaceSetup(READY, recordingEffects().effects);
 

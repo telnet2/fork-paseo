@@ -58,7 +58,8 @@ export const TRANSCRIPT_CSS = `
 [data-paseo-gap="paragraph"] {
   margin-bottom: var(--paseo-paragraph-gap, 12px) !important;
 }
-[data-paseo-assistant-spacing] [data-paseo-markdown-tag="p"] {
+[data-paseo-assistant-spacing] [data-paseo-markdown-tag="p"],
+[data-paseo-assistant-spacing] p {
   margin-bottom: var(--paseo-paragraph-gap, 12px) !important;
 }
 [data-paseo-gap="activity"] {

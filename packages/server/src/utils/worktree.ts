@@ -1419,7 +1419,12 @@ export const createWorktree = async ({
       ? await listLocalBranchNames(cwd)
       : new Set<string>();
   const placement = await planWorktreePlacement({
-    cwd, projectWorktreesRoot, source, worktreeSlug, paseoHome, worktreesRoot,
+    cwd,
+    projectWorktreesRoot,
+    source,
+    worktreeSlug,
+    paseoHome,
+    worktreesRoot,
     worktreePath: explicitWorktreePath,
   });
   const { sourcePlan } = placement;
@@ -1509,7 +1514,7 @@ async function planWorktreePlacement(options: CreateWorktreeOptions): Promise<{
   const directoryName = projectRoot ? sourcePlan.branchName : options.worktreeSlug;
   const requestedPath = restorePath ?? resolve(root, directoryName);
   const exactPath = Boolean(projectRoot || restorePath);
-  if (exactPath && await pathExists(requestedPath)) {
+  if (exactPath && (await pathExists(requestedPath))) {
     throw new Error(`Worktree path already exists: ${requestedPath}`);
   }
   if (!restorePath) await assertWorktreePathInsideRoot(root, requestedPath);
@@ -1542,8 +1547,13 @@ async function assertWorktreePathInsideRoot(root: string, worktreePath: string):
   }
   await mkdir(root, { recursive: true });
   let ancestor = worktreePath;
-  while (!await pathExists(ancestor)) ancestor = dirname(ancestor);
-  if (!isPathInsideRoot(await normalizePathForOwnership(root), await normalizePathForOwnership(ancestor))) {
+  while (!(await pathExists(ancestor))) ancestor = dirname(ancestor);
+  if (
+    !isPathInsideRoot(
+      await normalizePathForOwnership(root),
+      await normalizePathForOwnership(ancestor),
+    )
+  ) {
     throw new Error(`Worktree path escapes its root through a symlink: ${worktreePath}`);
   }
 }

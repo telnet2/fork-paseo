@@ -5035,17 +5035,21 @@ export class AgentManager {
 
     const flags: StreamEventFlags = { shouldDispatchEvent: true, shouldNotifyWaiters: true };
 
-    const dispatchPromise = this.dispatchStreamEventByType({
-      agent,
-      event,
-      options,
-      isForegroundEvent,
-      eventTurnId,
-      terminalDisposition,
-      flags,
-    });
-    if (dispatchPromise) {
-      await dispatchPromise;
+    if (event.type === "queue_status") {
+      dispatchQueueStatusEvent({ agent, event, options, flags }, () =>
+        this.emitState(agent, { persist: false }),
+      );
+    } else {
+      const dispatchPromise = this.dispatchStreamEventByType({
+        agent,
+        event,
+        options,
+        isForegroundEvent,
+        eventTurnId,
+        terminalDisposition,
+        flags,
+      });
+      if (dispatchPromise) await dispatchPromise;
     }
 
     if (!options?.fromHistory) {
@@ -5150,10 +5154,6 @@ export class AgentManager {
     const { agent, event, options, isForegroundEvent, eventTurnId, terminalDisposition, flags } =
       params;
     switch (event.type) {
-      case "queue_status":
-        return dispatchQueueStatusEvent({ ...params, event }, () =>
-          this.emitState(agent, { persist: false }),
-        );
       case "thread_started":
         this.onStreamThreadStarted(agent);
         return undefined;

@@ -242,7 +242,9 @@ export async function writePaseoWorktreeMetadata(
 
     const metadata: PaseoWorktreeMetadata = {
       version: 1,
-      ...(options.projectWorktreesRoot ? { projectWorktreesRoot: options.projectWorktreesRoot } : {}),
+      ...(options.projectWorktreesRoot
+        ? { projectWorktreesRoot: options.projectWorktreesRoot }
+        : {}),
       baseRefName,
       ...(baseRef ? { baseRef } : {}),
       ...(options.changeRequestLookupTarget
