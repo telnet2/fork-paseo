@@ -11,7 +11,6 @@ jobs:
       NODE_OPTIONS: --max-old-space-size=4096
       ONNXRUNTIME_NODE_INSTALL: skip
       PASEO_DESKTOP_SMOKE: "1"
-      PASEO_DESKTOP_SMOKE_ARTIFACT_DIR: ${{ runner.temp }}/desktop-smoke
     steps:
       - uses: actions/checkout@v4
         with:
@@ -26,6 +25,8 @@ jobs:
       - name: Install dependencies
         run: node scripts/npm-retry.mjs ci --registry=https://registry.npmjs.org --no-audit --no-fund
       - name: Build macOS ARM64 desktop app and run packaged smoke checks
+        env:
+          PASEO_DESKTOP_SMOKE_ARTIFACT_DIR: ${{ runner.temp }}/desktop-smoke
         run: npm run build:desktop -- --publish never --mac --arm64 -c.mac.identity=- -c.mac.notarize=false -c.mac.hardenedRuntime=false
       - name: Verify architecture and ad-hoc signature
         run: |
